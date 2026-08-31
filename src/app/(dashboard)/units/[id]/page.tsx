@@ -6,7 +6,7 @@ import { formatPeso } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import { UNIT_STATUS_STYLES } from "@/lib/status-colors";
 import { UnitFormDialog } from "../UnitFormDialog";
-import { UnitPhotoManager } from "./UnitPhotoManager";
+import { UnitPhotoManager } from "../UnitPhotoManager";
 
 export default async function UnitDetailPage({
   params,
@@ -18,17 +18,6 @@ export default async function UnitDetailPage({
 
   const { data: unit } = await supabase.from("units").select("*").eq("id", id).single();
   if (!unit) notFound();
-
-  const { data: photoRows } = await supabase
-    .from("unit_photos")
-    .select("id, storage_path, sort_order")
-    .eq("unit_id", id)
-    .order("sort_order", { ascending: true });
-
-  const photos = (photoRows ?? []).map((p) => ({
-    ...p,
-    url: supabase.storage.from("unit-photos").getPublicUrl(p.storage_path).data.publicUrl,
-  }));
 
   return (
     <div>
@@ -64,7 +53,7 @@ export default async function UnitDetailPage({
       </div>
 
       <div className="mt-8">
-        <UnitPhotoManager unitId={unit.id} photos={photos} />
+        <UnitPhotoManager unitId={unit.id} />
       </div>
     </div>
   );
