@@ -65,8 +65,7 @@ export default async function UnitsPage() {
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Capacity</th>
-                <th className="px-4 py-3 font-medium">Nightly rate</th>
-                <th className="px-4 py-3 font-medium">Amenities</th>
+                <th className="px-4 py-3 font-medium">Standard rate</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
@@ -95,22 +94,6 @@ export default async function UnitsPage() {
                   <td className="px-4 py-3 text-muted">{unit.unit_type}</td>
                   <td className="px-4 py-3 text-muted">{unit.max_capacity}</td>
                   <td className="px-4 py-3 text-foreground">{formatPeso(unit.nightly_rate)}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {unit.amenities.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {unit.amenities.map((a) => (
-                          <span
-                            key={a}
-                            className="rounded-full bg-surface-raised px-2 py-0.5 text-xs"
-                          >
-                            {a}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
                   <td className="px-4 py-3">
                     <UnitStatusSelect unitId={unit.id} status={unit.status} />
                   </td>
