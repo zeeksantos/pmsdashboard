@@ -1,3 +1,5 @@
+import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatPeso } from "@/lib/format";
 import { UnitFormDialog } from "./UnitFormDialog";
@@ -10,6 +12,25 @@ export default async function UnitsPage() {
     .from("units")
     .select("*")
     .order("name", { ascending: true });
+
+  const unitIds = (units ?? []).map((u) => u.id);
+  const { data: photoRows } =
+    unitIds.length > 0
+      ? await supabase
+          .from("unit_photos")
+          .select("unit_id, storage_path, sort_order")
+          .in("unit_id", unitIds)
+          .order("sort_order", { ascending: true })
+      : { data: [] as { unit_id: string; storage_path: string; sort_order: number }[] };
+
+  const coverUrlByUnitId = new Map<string, string>();
+  for (const row of photoRows ?? []) {
+    if (coverUrlByUnitId.has(row.unit_id)) continue;
+    coverUrlByUnitId.set(
+      row.unit_id,
+      supabase.storage.from("unit-photos").getPublicUrl(row.storage_path).data.publicUrl
+    );
+  }
 
   return (
     <div>
@@ -40,6 +61,7 @@ export default async function UnitsPage() {
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+                <th className="px-4 py-3 font-medium"></th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Capacity</th>
@@ -52,7 +74,24 @@ export default async function UnitsPage() {
             <tbody>
               {units.map((unit) => (
                 <tr key={unit.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium text-foreground">{unit.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="h-10 w-10 overflow-hidden rounded-md bg-surface-raised">
+                      {coverUrlByUnitId.has(unit.id) ? (
+                        <Image
+                          src={coverUrlByUnitId.get(unit.id)!}
+                          alt=""
+                          width={40}
+                          height={40}
+                          className="h-10 w-10 object-cover"
+                        />
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-foreground">
+                    <Link href={`/units/${unit.id}`} className="hover:text-accent hover:underline">
+                      {unit.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-muted">{unit.unit_type}</td>
                   <td className="px-4 py-3 text-muted">{unit.max_capacity}</td>
                   <td className="px-4 py-3 text-foreground">{formatPeso(unit.nightly_rate)}</td>

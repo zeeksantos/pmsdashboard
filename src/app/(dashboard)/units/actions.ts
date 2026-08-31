@@ -84,3 +84,33 @@ export async function deleteUnit(unitId: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/units");
 }
+
+export async function addUnitPhoto(unitId: string, storagePath: string, sortOrder: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("unit_photos").insert({
+    unit_id: unitId,
+    storage_path: storagePath,
+    sort_order: sortOrder,
+    created_by: user?.id ?? null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/units/${unitId}`);
+  revalidatePath("/units");
+}
+
+export async function deleteUnitPhoto(photoId: string, unitId: string, storagePath: string) {
+  const supabase = await createClient();
+
+  await supabase.storage.from("unit-photos").remove([storagePath]);
+
+  const { error } = await supabase.from("unit_photos").delete().eq("id", photoId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/units/${unitId}`);
+  revalidatePath("/units");
+}

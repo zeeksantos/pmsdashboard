@@ -122,6 +122,15 @@ export type MaintenanceTicket = {
   resolved_at: string | null;
 };
 
+export type UnitPhoto = {
+  id: string;
+  unit_id: string;
+  storage_path: string;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type AuditLog = {
   id: string;
   user_id: string | null;
@@ -182,6 +191,12 @@ export type Database = {
         Row: AuditLog;
         Insert: Record<string, never>;
         Update: Record<string, never>;
+        Relationships: [];
+      };
+      unit_photos: {
+        Row: UnitPhoto;
+        Insert: Partial<UnitPhoto> & Pick<UnitPhoto, "unit_id" | "storage_path">;
+        Update: Partial<UnitPhoto>;
         Relationships: [];
       };
     };
