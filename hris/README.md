@@ -25,4 +25,11 @@ role-based access, audit log. Payroll, leave, and performance are later phases.
 - GPS is recorded on every time in/out (not enforced).
 
 ## Migrations
-Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage).
+Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage), 0006 (leave).
+
+## Leave rules (defaults, editable in Leave settings)
+- Types: Vacation 5, Sick 5, Emergency 3 (capped), Unpaid (uncapped). Days are per calendar year, no carry-over.
+- Days are counted against the employee's own working days (Mon-Fri if no schedule).
+- A request can't overlap another pending/approved one, can't exceed the balance, and can't span two years.
+- Approver: the employee's direct manager (reports to) or HR/admin/owner. Nobody approves their own request (except the owner).
+- Employees may cancel pending requests, or approved ones that haven't started; HR can cancel any.

@@ -19,6 +19,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (me.employee) {
     nav.push({ href: `/employees/${me.employee.id}`, label: "My Profile", icon: "user" });
   }
+  if (me.employee) {
+    nav.push({ href: "/leave", label: "Leave", icon: "plane" });
+  }
+  if (canViewTeamAttendance(me.role)) {
+    nav.push({ href: "/leave/approvals", label: "Leave Approvals", icon: "approve" });
+  }
   if (canViewDirectory(me.role)) {
     nav.push({ href: "/employees", label: "Employees", icon: "users" });
     nav.push({ href: "/org-chart", label: "Org Chart", icon: "network" });

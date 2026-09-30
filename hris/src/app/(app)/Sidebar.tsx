@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardList, Clock, Home, LogOut, Network, Shield, User, Users, Wallet } from "lucide-react";
+import { CalendarDays, ClipboardCheck, ClipboardList, Clock, Home, LogOut, Network, Plane, Shield, User, Users, Wallet } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const icons = {
@@ -15,6 +15,8 @@ const icons = {
   clipboard: ClipboardList,
   wallet: Wallet,
   shield: Shield,
+  plane: Plane,
+  approve: ClipboardCheck,
 };
 
 export type NavItem = { href: string; label: string; icon: keyof typeof icons };
@@ -54,6 +56,8 @@ export function Sidebar({
           const active =
             href === "/"
               ? pathname === "/"
+              : href === "/leave"
+                ? pathname === "/leave" || pathname.startsWith("/leave/settings")
               : href === "/employees"
                 ? pathname === "/employees" || pathname.startsWith("/employees/new")
                 : pathname.startsWith(href);

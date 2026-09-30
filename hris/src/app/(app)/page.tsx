@@ -88,7 +88,7 @@ export default async function HomePage() {
   const showHr = canManageRecords(me.role);
   const showSalary = canViewSalaries(me.role);
 
-  const [myLog, employeesRes, schedulesRes, logsRes, bioRes, salariesRes] = await Promise.all([
+  const [myLog, employeesRes, schedulesRes, logsRes, bioRes, salariesRes, leaveRes, pendingLeaveRes] = await Promise.all([
     me.employee
       ? supabase.from("attendance_logs").select("time_in, time_out, late_minutes")
           .eq("employee_id", me.employee.id).eq("work_date", today).maybeSingle()
@@ -110,6 +110,10 @@ export default async function HomePage() {
     showSalary
       ? supabase.from("employee_salaries").select("employee_id, monthly_rate, hourly_rate, effective_from")
       : Promise.resolve({ data: null }),
+    showTeam ? supabase.rpc("employees_on_leave", { p_date: today }) : Promise.resolve({ data: null }),
+    showTeam
+      ? supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "PENDING")
+      : Promise.resolve({ count: null }),
   ]);
 
   const employees = (employeesRes.data ?? []) as unknown as Emp[];
@@ -124,8 +128,10 @@ export default async function HomePage() {
     schedules,
     (logsRes.data ?? []) as { employee_id: string; time_in: string | null; late_minutes: number }[],
     today,
-    manilaMinutesNow()
+    manilaMinutesNow(),
+    new Set((leaveRes.data ?? []) as string[])
   );
+  const pendingLeave = pendingLeaveRes.count ?? 0;
 
   // Headcount breakdowns
   const byType = ["REGULAR", "CONTRACTUAL", "PART_TIME"].map((t) => ({
@@ -205,6 +211,8 @@ export default async function HomePage() {
             <Stat name="Clocked in" value={team.clockedIn.length} href="/team-attendance" />
             <Stat name="Late" value={team.late.length} href="/team-attendance" tone={team.late.length ? "warning" : undefined} />
             <Stat name="Not in yet (past grace)" value={team.notIn.length} href="/team-attendance" tone={team.notIn.length ? "danger" : undefined} />
+            <Stat name="On approved leave" value={team.onLeave.length} href="/leave/approvals" />
+            <Stat name="Leave requests waiting" value={pendingLeave} href="/leave/approvals" tone={pendingLeave ? "warning" : undefined} />
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Panel
@@ -213,8 +221,13 @@ export default async function HomePage() {
               items={team.late.map((id) => ({ id, name: name(id), detail: "late" }))}
             />
             <Panel
+              title="On approved leave today"
+              empty="No one is on leave."
+              items={team.onLeave.map((id) => ({ id, name: name(id) }))}
+            />
+            <Panel
               title="Not in yet"
-              note="Scheduled today, past the 15-minute grace, no time-in. Approved leave isn't tracked yet."
+              note="Scheduled today, past the 15-minute grace, no time-in, and not on approved leave."
               empty="Everyone scheduled has clocked in or isn't due yet."
               items={team.notIn.map((id) => ({ id, name: name(id), tone: "danger" as const, detail: `starts ${schedules.get(id)?.start_time.slice(0, 5)}` }))}
             />

@@ -30,6 +30,7 @@ export type TeamToday = {
   late: string[];
   notIn: string[]; // scheduled, past start + grace, no time-in
   notYetDue: string[]; // scheduled, no time-in, still within start + grace
+  onLeave: string[]; // active employees on approved leave today
 };
 
 export function teamToday(
@@ -37,22 +38,24 @@ export function teamToday(
   schedules: Map<string, Schedule>,
   logs: TodayLog[],
   today: string,
-  nowMinutes: number
+  nowMinutes: number,
+  onLeaveIds: Set<string> = new Set()
 ): TeamToday {
   const dow = dayOfWeek(today);
   const logByEmp = new Map(logs.map((l) => [l.employee_id, l]));
-  const result: TeamToday = { scheduled: [], clockedIn: [], late: [], notIn: [], notYetDue: [] };
+  const result: TeamToday = { scheduled: [], clockedIn: [], late: [], notIn: [], notYetDue: [], onLeave: [] };
 
   for (const id of activeIds) {
     const log = logByEmp.get(id);
     const sched = schedules.get(id);
     const works = Boolean(sched && sched.days_of_week.includes(dow));
     if (works) result.scheduled.push(id);
+    if (onLeaveIds.has(id)) result.onLeave.push(id);
     // Someone who clocked in counts as present even on a non-scheduled day.
     if (log?.time_in) {
       result.clockedIn.push(id);
       if (log.late_minutes > 0) result.late.push(id);
-    } else if (works && sched) {
+    } else if (works && sched && !onLeaveIds.has(id)) {
       if (nowMinutes > timeToMinutes(sched.start_time) + GRACE_MINUTES) result.notIn.push(id);
       else result.notYetDue.push(id);
     }
