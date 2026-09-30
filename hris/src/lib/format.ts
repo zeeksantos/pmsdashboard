@@ -36,3 +36,15 @@ export function formatPeso(amount: number | string | null | undefined): string {
     minimumFractionDigits: 2,
   }).format(Number(amount));
 }
+
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-PH", {
+    timeZone: TZ,
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}

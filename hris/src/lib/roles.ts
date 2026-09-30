@@ -35,3 +35,9 @@ export const salaryViewers: Role[] = ["finance", "admin", "owner"];
 export function canViewSalaries(role: Role) {
   return salaryViewers.includes(role);
 }
+
+// Who may read the audit log (matches the audit_read RLS policy).
+export const auditViewers: Role[] = ["admin", "owner"];
+export function canViewAuditLog(role: Role) {
+  return auditViewers.includes(role);
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardList, Clock, Home, LogOut, Network, User, Users, Wallet } from "lucide-react";
+import { CalendarDays, ClipboardList, Clock, Home, LogOut, Network, Shield, User, Users, Wallet } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const icons = {
@@ -14,6 +14,7 @@ const icons = {
   network: Network,
   clipboard: ClipboardList,
   wallet: Wallet,
+  shield: Shield,
 };
 
 export type NavItem = { href: string; label: string; icon: keyof typeof icons };

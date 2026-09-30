@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { canViewDirectory, canViewSalaries, canViewTeamAttendance, roleLabels } from "@/lib/roles";
+import { canViewAuditLog, canViewDirectory, canViewSalaries, canViewTeamAttendance, roleLabels } from "@/lib/roles";
 import { Sidebar, type NavItem } from "./Sidebar";
 import { signOut } from "../login/actions";
 
@@ -28,6 +28,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
   if (canViewTeamAttendance(me.role)) {
     nav.push({ href: "/team-attendance", label: "Team Attendance", icon: "clipboard" });
+  }
+
+  if (canViewAuditLog(me.role)) {
+    nav.push({ href: "/audit-log", label: "Audit Log", icon: "shield" });
   }
 
   return (
