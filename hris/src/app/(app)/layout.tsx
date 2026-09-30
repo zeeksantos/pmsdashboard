@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { canViewAuditLog, canViewDirectory, canViewSalaries, canViewTeamAttendance, roleLabels } from "@/lib/roles";
+import { canManagePayroll, canViewAuditLog, canViewDirectory, canViewSalaries, canViewTeamAttendance, roleLabels } from "@/lib/roles";
 import { Sidebar, type NavItem } from "./Sidebar";
 import { signOut } from "../login/actions";
 
@@ -30,8 +30,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     nav.push({ href: "/employees", label: "Employees", icon: "users" });
     nav.push({ href: "/org-chart", label: "Org Chart", icon: "network" });
   }
+  if (me.employee) {
+    nav.push({ href: "/payslips", label: "My Payslips", icon: "receipt" });
+  }
   if (canViewSalaries(me.role)) {
     nav.push({ href: "/salaries", label: "Salaries", icon: "wallet" });
+  }
+  if (canManagePayroll(me.role)) {
+    nav.push({ href: "/payroll", label: "Payroll", icon: "banknote" });
   }
   if (canViewTeamAttendance(me.role)) {
     nav.push({ href: "/team-attendance", label: "Team Attendance", icon: "clipboard" });

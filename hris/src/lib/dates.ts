@@ -22,3 +22,14 @@ export function manilaMinutesNow(): number {
   });
   return timeToMinutes(t);
 }
+
+// The most recently completed semi-monthly period (1st-15th or 16th-end), as a default for new runs.
+export function suggestPeriod(today: string): { start: string; end: string } {
+  const [y, m, d] = today.split("-").map(Number);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (d >= 16) return { start: `${y}-${pad(m)}-01`, end: `${y}-${pad(m)}-15` };
+  const py = m === 1 ? y - 1 : y;
+  const pm = m === 1 ? 12 : m - 1;
+  const last = new Date(Date.UTC(py, pm, 0)).getUTCDate();
+  return { start: `${py}-${pad(pm)}-16`, end: `${py}-${pad(pm)}-${pad(last)}` };
+}

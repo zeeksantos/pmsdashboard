@@ -25,7 +25,7 @@ role-based access, audit log. Payroll, leave, and performance are later phases.
 - GPS is recorded on every time in/out (not enforced).
 
 ## Migrations
-Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage), 0006 (leave), 0007 (employee self-service).
+Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage), 0006 (leave), 0007 (employee self-service), 0008 (payroll).
 
 ## Leave rules (defaults, editable in Leave settings)
 - Types: Vacation 5, Sick 5, Emergency 3 (capped), Unpaid (uncapped). Days are per calendar year, no carry-over.
@@ -54,3 +54,18 @@ link, so add the code:
 
 Supabase's built-in email sender is heavily rate-limited (a few emails per hour) and meant for testing.
 Before rolling out to staff, add your own SMTP under Authentication -> SMTP Settings.
+
+## Payroll
+Finance, admin and owner create a draft run for a period, review and adjust each payslip, then finalize (locks it).
+Employees see only their own payslips, and only after the run is finalized. Only admin/owner can reopen a run.
+
+- Basic pay: monthly rate / periods per month; hourly staff = hourly rate x paid hours (shift minus a 1-hour break).
+- Optional per run: absence and late/undertime deductions (daily rate = monthly x 12 / (days per week x 52.2)),
+  SSS / PhilHealth / Pag-IBIG (employee share deducted, employer share recorded), and income tax (TRAIN, annualized).
+- Government rates are built into `src/lib/payroll.ts` and each run stores which version it used
+  (`RATES_VERSION`). They change over time: have your accountant confirm them, and update that file when they do.
+- Not covered yet: 13th month pay, overtime, holiday premiums, final pay on resignation, loans as a schedule
+  (add one-off adjustments by hand), BIR/SSS filing exports.
+- Finance reads attendance and leave only through `payroll_inputs` (totals per employee, no details).
+
+Tests for the calculations: `npm test`.

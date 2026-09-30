@@ -41,3 +41,9 @@ export const auditViewers: Role[] = ["admin", "owner"];
 export function canViewAuditLog(role: Role) {
   return auditViewers.includes(role);
 }
+
+// Who may prepare and finalize payroll (matches the payroll RLS policies).
+export const payrollStaff: Role[] = ["finance", "admin", "owner"];
+export function canManagePayroll(role: Role) {
+  return payrollStaff.includes(role);
+}

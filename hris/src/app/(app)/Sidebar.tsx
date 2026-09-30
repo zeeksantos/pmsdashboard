@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardCheck, ClipboardList, Clock, Home, LogOut, Network, Plane, Settings, Shield, User, Users, Wallet } from "lucide-react";
+import { Banknote, CalendarDays, ClipboardCheck, ClipboardList, Clock, Home, LogOut, Network, Plane, Receipt, Settings, Shield, User, Users, Wallet } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const icons = {
@@ -18,6 +18,8 @@ const icons = {
   plane: Plane,
   approve: ClipboardCheck,
   settings: Settings,
+  receipt: Receipt,
+  banknote: Banknote,
 };
 
 export type NavItem = { href: string; label: string; icon: keyof typeof icons };
@@ -36,7 +38,7 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <aside className="border-b border-border bg-surface md:min-h-screen md:w-60 md:border-b-0 md:border-r">
+    <aside className="print:hidden border-b border-border bg-surface md:min-h-screen md:w-60 md:border-b-0 md:border-r">
       <div className="flex items-center justify-between px-4 py-3 md:block md:py-6">
         <div>
           <p className="text-lg font-semibold">Z-Fast HRIS</p>
