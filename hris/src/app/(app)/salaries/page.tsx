@@ -5,8 +5,8 @@ import { getCurrentUser } from "@/lib/session";
 import { canViewSalaries } from "@/lib/roles";
 import { formatPeso, manilaToday } from "@/lib/format";
 import { label } from "@/lib/employees";
+import { currentSalary, type Salary } from "@/lib/salary";
 
-type Salary = { monthly_rate: number | null; hourly_rate: number | null; effective_from: string };
 type Row = {
   id: string;
   employee_no: string;
@@ -16,15 +16,6 @@ type Row = {
   departments: { name: string } | null;
   employee_salaries: Salary[];
 };
-
-// Latest salary whose effective date has arrived.
-function currentSalary(list: Salary[], today: string): Salary | null {
-  return (
-    [...list]
-      .filter((s) => s.effective_from <= today)
-      .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0] ?? null
-  );
-}
 
 export default async function SalariesPage({
   searchParams,

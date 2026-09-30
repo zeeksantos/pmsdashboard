@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { canManageRecords, canViewDirectory } from "@/lib/roles";
-import { employmentStatuses, label } from "@/lib/employees";
+import { employmentStatuses, employmentTypes, label } from "@/lib/employees";
 import { cn } from "@/lib/cn";
 
 type Row = {
@@ -26,12 +26,12 @@ const statusColor: Record<string, string> = {
 export default async function EmployeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; dept?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; dept?: string; status?: string; type?: string }>;
 }) {
   const me = await getCurrentUser();
   if (!me || !canViewDirectory(me.role)) notFound();
 
-  const { q, dept, status } = await searchParams;
+  const { q, dept, status, type } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -42,6 +42,7 @@ export default async function EmployeesPage({
   if (term) query = query.or(`full_name.ilike.%${term}%,employee_no.ilike.%${term}%`);
   if (dept) query = query.eq("department_id", dept);
   if (status) query = query.eq("status", status);
+  if (type) query = query.eq("employment_type", type);
 
   const [{ data }, { data: departments }] = await Promise.all([
     query,
@@ -75,6 +76,10 @@ export default async function EmployeesPage({
         <select name="status" defaultValue={status ?? ""} className={field}>
           <option value="">Any status</option>
           {employmentStatuses.map((s) => (<option key={s} value={s}>{label(s)}</option>))}
+        </select>
+        <select name="type" defaultValue={type ?? ""} className={field}>
+          <option value="">Any type</option>
+          {employmentTypes.map((t) => (<option key={t} value={t}>{label(t)}</option>))}
         </select>
         <button className="rounded-lg bg-surface-raised px-3 py-1.5 text-sm hover:bg-border">Filter</button>
       </form>
