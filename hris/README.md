@@ -38,3 +38,19 @@ Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + se
 Employees can edit their own nickname, phone, personal email, address, and emergency contact
 (My Account), and change their password. Everything else stays HR-only. Enforced by the
 `update_my_contact` database function; employees have no write policy on biodata.
+
+## Forgot password (emailed code)
+Login page -> "Forgot your password?" -> email -> 6-digit code -> new password. Uses Supabase's
+`resetPasswordForEmail` + `verifyOtp` (no redirect URLs needed, works across devices). On success other
+sessions for that account are signed out. The response is the same whether or not the email has an account.
+
+One-time Supabase setup (Authentication -> Email Templates -> "Reset Password"): the default template only has a
+link, so add the code:
+
+    Subject: Your Z-Fast HRIS password reset code
+    Body:    <h2>Reset your password</h2>
+             <p>Your code is: <b>{{ .Token }}</b></p>
+             <p>It expires in 1 hour. If you didn't ask for this, ignore this email.</p>
+
+Supabase's built-in email sender is heavily rate-limited (a few emails per hour) and meant for testing.
+Before rolling out to staff, add your own SMTP under Authentication -> SMTP Settings.

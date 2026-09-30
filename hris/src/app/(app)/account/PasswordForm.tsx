@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { validateNewPassword } from "@/lib/password";
 
 const input =
   "w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
@@ -18,9 +19,8 @@ export function PasswordForm({ email }: { email: string }) {
     const next = String(fd.get("next") ?? "");
     const confirm = String(fd.get("confirm") ?? "");
 
-    if (next.length < 8) return setMsg({ ok: false, text: "New password must be at least 8 characters." });
-    if (next !== confirm) return setMsg({ ok: false, text: "The new passwords don't match." });
-    if (next === current) return setMsg({ ok: false, text: "Choose a password different from the current one." });
+    const invalid = validateNewPassword(next, confirm, current);
+    if (invalid) return setMsg({ ok: false, text: invalid });
 
     setBusy(true);
     setMsg(null);
