@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Clock, Home, LogOut, Users } from "lucide-react";
+import { CalendarDays, ClipboardList, Clock, Home, LogOut, Network, User, Users } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-const icons = { home: Home, clock: Clock, calendar: CalendarDays, users: Users };
+const icons = {
+  home: Home,
+  clock: Clock,
+  calendar: CalendarDays,
+  users: Users,
+  user: User,
+  network: Network,
+  clipboard: ClipboardList,
+};
 
 export type NavItem = { href: string; label: string; icon: keyof typeof icons };
 
@@ -41,7 +49,12 @@ export function Sidebar({
       <nav className="flex gap-1 overflow-x-auto px-2 pb-2 md:flex-col md:px-3">
         {items.map(({ href, label, icon }) => {
           const Icon = icons[icon];
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const active =
+            href === "/"
+              ? pathname === "/"
+              : href === "/employees"
+                ? pathname === "/employees" || pathname.startsWith("/employees/new")
+                : pathname.startsWith(href);
           return (
             <Link
               key={href}

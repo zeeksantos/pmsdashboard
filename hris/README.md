@@ -23,3 +23,6 @@ role-based access, audit log. Payroll, leave, and performance are later phases.
 - 15-minute grace: clock-in up to 15 min after start is not late; clock-out
   up to 15 min before end is not undertime.
 - GPS is recorded on every time in/out (not enforced).
+
+## Migrations
+Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role).

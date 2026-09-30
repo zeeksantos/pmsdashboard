@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { canViewTeamAttendance, roleLabels } from "@/lib/roles";
+import { canViewDirectory, canViewTeamAttendance, roleLabels } from "@/lib/roles";
 import { Sidebar, type NavItem } from "./Sidebar";
 import { signOut } from "../login/actions";
 
@@ -16,8 +16,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/time-clock", label: "Time Clock", icon: "clock" },
     { href: "/attendance", label: "My Attendance", icon: "calendar" },
   ];
+  if (me.employee) {
+    nav.push({ href: `/employees/${me.employee.id}`, label: "My Profile", icon: "user" });
+  }
+  if (canViewDirectory(me.role)) {
+    nav.push({ href: "/employees", label: "Employees", icon: "users" });
+    nav.push({ href: "/org-chart", label: "Org Chart", icon: "network" });
+  }
   if (canViewTeamAttendance(me.role)) {
-    nav.push({ href: "/team-attendance", label: "Team Attendance", icon: "users" });
+    nav.push({ href: "/team-attendance", label: "Team Attendance", icon: "clipboard" });
   }
 
   return (
