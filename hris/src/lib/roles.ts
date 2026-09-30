@@ -29,3 +29,9 @@ export function canViewDirectory(role: Role) {
 }
 
 export const allRoles: Role[] = ["employee", "manager", "hr", "finance", "admin", "owner"];
+
+// Who may see and edit salary data (matches the employee_salaries RLS policy).
+export const salaryViewers: Role[] = ["finance", "admin", "owner"];
+export function canViewSalaries(role: Role) {
+  return salaryViewers.includes(role);
+}

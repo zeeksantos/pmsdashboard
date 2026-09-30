@@ -27,3 +27,12 @@ export function mapLink(lat: number | null, lng: number | null): string | null {
   if (lat == null || lng == null) return null;
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
 }
+
+export function formatPeso(amount: number | string | null | undefined): string {
+  if (amount == null || amount === "") return "—";
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+  }).format(Number(amount));
+}

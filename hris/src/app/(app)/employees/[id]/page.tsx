@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
-import { canManageRecords } from "@/lib/roles";
+import { canManageRecords, canViewSalaries } from "@/lib/roles";
 import { formatDate } from "@/lib/format";
 import { formatClock, label, weekdays } from "@/lib/employees";
 
@@ -84,6 +84,15 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
             {e.employee_no} · {e.positions?.title ?? "No position"} · {e.departments?.name ?? "No department"}
           </p>
         </div>
+        <div className="flex gap-2">
+        {me && canViewSalaries(me.role) && (
+          <Link
+            href={`/salaries/${e.id}`}
+            className="rounded-lg border border-border px-4 py-2 text-sm text-muted hover:text-foreground"
+          >
+            Salary
+          </Link>
+        )}
         {canEdit && (
           <Link
             href={`/employees/${e.id}/edit`}
@@ -92,6 +101,7 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
             Edit
           </Link>
         )}
+        </div>
       </div>
 
       <Card title="Work information">
