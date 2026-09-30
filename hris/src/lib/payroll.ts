@@ -123,12 +123,16 @@ export function computePayslip(args: {
     const dailyRate = (monthlyRate * 12) / (i.days_per_week * WEEKS_PER_YEAR);
     const perMinute = dailyRate / (shiftHours * 60);
     add("EARNING", "BASIC", "Basic pay", basic);
-    if (options.deduct_absences) {
-      add("DEDUCTION", "ABSENCE", `Absences (${i.absent_days} day${i.absent_days === 1 ? "" : "s"})`, i.absent_days * dailyRate);
+    // Absence and lateness can reduce basic pay to zero, but never below it.
+    let absence = options.deduct_absences ? round2(i.absent_days * dailyRate) : 0;
+    let late = options.deduct_late ? round2(lateUnder * perMinute) : 0;
+    const cap = round2(basic);
+    if (absence + late > cap) {
+      absence = Math.min(absence, cap);
+      late = round2(Math.max(0, cap - absence));
     }
-    if (options.deduct_late) {
-      add("DEDUCTION", "LATE", `Late / undertime (${lateUnder} min)`, lateUnder * perMinute);
-    }
+    add("DEDUCTION", "ABSENCE", `Absences (${i.absent_days} day${i.absent_days === 1 ? "" : "s"})`, absence);
+    add("DEDUCTION", "LATE", `Late / undertime (${lateUnder} min)`, late);
     monthlyBase = monthlyRate;
     snapshot.monthly_rate = monthlyRate;
     snapshot.daily_rate = round2(dailyRate);

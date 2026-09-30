@@ -36,6 +36,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const employerCost = sum((s) => s.payslip_lines.filter((l) => l.kind === "EMPLOYER").reduce((t, l) => t + Number(l.amount), 0));
   const included = new Set(slips.map((s) => s.employee_id));
   const missing = (active ?? []).filter((e) => !included.has(e.id));
+  const negative = slips.filter((s) => Number(s.net_pay) < 0);
   const draft = run.status === "DRAFT";
   const thirteenth = run.kind === "THIRTEENTH_MONTH";
   const year = run.period_end.slice(0, 4);
@@ -108,6 +109,14 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
           ? `Basis: ${run.rates_version}. Uses basic salary from your finalized regular runs ending in ${year}; allowances, bonuses and other manual lines are not counted. Employees who joined or left during the year are pro-rated automatically. If someone earned basic pay outside this system, add it on their payslip.`
           : `Included: ${on.length ? on.join(", ") : "no automatic deductions"}. Rates used: ${run.rates_version ?? "unknown"}. Confirm the government rates with your accountant.`}
       </p>
+
+      {negative.length > 0 && (
+        <div className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
+          Negative net pay: {negative.map((s) => s.employees?.full_name).join(", ")}. Their deductions are more than
+          their pay this period (for example government contributions with little attendance). Review those payslips
+          before finalizing.
+        </div>
+      )}
 
       {missing.length > 0 && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">

@@ -8,6 +8,12 @@ export const resourceLabels: Record<string, string> = {
   user_roles: "User role",
   positions: "Position",
   departments: "Department",
+  leave_types: "Leave type",
+  leave_allocations: "Leave allowance",
+  leave_requests: "Leave request",
+  payroll_runs: "Payroll run",
+  payslips: "Payslip",
+  payslip_lines: "Payslip line",
 };
 
 export type AuditRow = {

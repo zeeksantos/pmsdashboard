@@ -72,6 +72,27 @@ test("absences and lateness use the daily rate (20,000 x 12 / 261 days)", () => 
   assert.equal(r.net, 8075.78);
 });
 
+test("absence and lateness can't take away more than the basic pay", () => {
+  // 20,000/month semi-monthly: basic 10,000, but 11 absent days at 919.54 would be 10,114.94
+  const r = computePayslip({
+    monthlyRate: 20000, hourlyRate: null, periodsPerMonth: 2,
+    inputs: { ...full, days_present: 0, absent_days: 11, late_minutes: 30 },
+    options: { ...none, deduct_absences: true, deduct_late: true },
+  });
+  assert.equal(r.gross, 10000);
+  assert.equal(r.lines.find((l) => l.code === "ABSENCE")?.amount, 10000);
+  assert.equal(r.lines.find((l) => l.code === "LATE"), undefined); // nothing left to take
+  assert.equal(r.net, 0);
+  // absence just under the cap leaves room for a little lateness
+  const partial = computePayslip({
+    monthlyRate: 20000, hourlyRate: null, periodsPerMonth: 2,
+    inputs: { ...full, absent_days: 10, late_minutes: 600 },
+    options: { ...none, deduct_absences: true, deduct_late: true },
+  });
+  assert.equal(partial.deductions, 10000);
+  assert.equal(partial.net, 0);
+});
+
 test("switched-off options add no deduction lines", () => {
   const r = computePayslip({
     monthlyRate: 20000, hourlyRate: null, periodsPerMonth: 2,

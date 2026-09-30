@@ -112,7 +112,11 @@ export default async function HomePage() {
       : Promise.resolve({ data: null }),
     showTeam ? supabase.rpc("employees_on_leave", { p_date: today }) : Promise.resolve({ data: null }),
     showTeam
-      ? supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "PENDING")
+      ? (() => {
+          // Same rule as the Leave Approvals page: your own requests aren't in your queue.
+          const q = supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "PENDING");
+          return me.employee ? q.neq("employee_id", me.employee.id) : q;
+        })()
       : Promise.resolve({ count: null }),
   ]);
 

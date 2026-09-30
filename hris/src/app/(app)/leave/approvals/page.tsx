@@ -34,8 +34,11 @@ export default async function ApprovalsPage() {
   const year = Number(manilaToday().slice(0, 4));
 
   // The database decides which requests appear: your direct reports', or everyone's for HR/admin/owner.
+  // Your own requests are decided by someone else, so they don't belong in your queue.
+  let pendingQuery = supabase.from("leave_requests").select(select).eq("status", "PENDING").order("requested_at");
+  if (me.employee) pendingQuery = pendingQuery.neq("employee_id", me.employee.id);
   const [{ data: pending }, { data: decided }] = await Promise.all([
-    supabase.from("leave_requests").select(select).eq("status", "PENDING").order("requested_at"),
+    pendingQuery,
     supabase.from("leave_requests").select(select).neq("status", "PENDING").order("requested_at", { ascending: false }).limit(30),
   ]);
   const pendingRows = (pending ?? []) as unknown as Req[];
