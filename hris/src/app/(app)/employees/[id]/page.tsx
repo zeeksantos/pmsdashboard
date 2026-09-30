@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { canManageRecords, canViewSalaries } from "@/lib/roles";
 import { formatDate } from "@/lib/format";
 import { formatClock, label, weekdays } from "@/lib/employees";
+import { Documents } from "./Documents";
 
 type Emp = {
   id: string;
@@ -153,6 +154,12 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
             <Item name="Pag-IBIG no." value={bio.pagibig_no} />
             <Item name="TIN" value={bio.tin} />
           </Card>
+          <Documents employeeId={e.id} canEdit={canEdit} />
+        </>
+      ) : canEdit ? (
+        <>
+          <p className="text-sm text-muted">No biodata saved yet. Use Edit to add it.</p>
+          <Documents employeeId={e.id} canEdit={canEdit} />
         </>
       ) : (
         <p className="text-sm text-muted">

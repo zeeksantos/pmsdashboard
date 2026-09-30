@@ -62,3 +62,32 @@ export type EmployeeFormValues = {
   end_time: string;
   days: number[];
 };
+
+export const documentTypes = [
+  "Contract",
+  "Resume",
+  "Government ID",
+  "NBI Clearance",
+  "Medical",
+  "Birth Certificate",
+  "Certificate / Training",
+  "Other",
+] as const;
+
+export const DOCUMENT_BUCKET = "employee-documents";
+export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+export const DOCUMENT_ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx";
+export const DOCUMENT_MIME_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
+export function formatBytes(n: number | null | undefined): string {
+  if (!n) return "—";
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}

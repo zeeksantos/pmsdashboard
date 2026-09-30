@@ -25,4 +25,4 @@ role-based access, audit log. Payroll, leave, and performance are later phases.
 - GPS is recorded on every time in/out (not enforced).
 
 ## Migrations
-Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints).
+Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage).
