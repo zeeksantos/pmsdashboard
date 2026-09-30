@@ -86,6 +86,14 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
           </p>
         </div>
         <div className="flex gap-2">
+        {me?.employee?.id === e.id && (
+          <Link
+            href="/account"
+            className="rounded-lg border border-border px-4 py-2 text-sm text-muted hover:text-foreground"
+          >
+            Edit my details
+          </Link>
+        )}
         {me && canViewSalaries(me.role) && (
           <Link
             href={`/salaries/${e.id}`}

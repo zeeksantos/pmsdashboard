@@ -19,6 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (me.employee) {
     nav.push({ href: `/employees/${me.employee.id}`, label: "My Profile", icon: "user" });
   }
+  nav.push({ href: "/account", label: "My Account", icon: "settings" });
   if (me.employee) {
     nav.push({ href: "/leave", label: "Leave", icon: "plane" });
   }
