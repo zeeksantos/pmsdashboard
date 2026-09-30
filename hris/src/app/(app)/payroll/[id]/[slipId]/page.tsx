@@ -12,7 +12,7 @@ export default async function StaffPayslipPage({ params }: { params: Promise<{ i
 
   const supabase = await createClient();
   const [{ data: run }, { data: slip }] = await Promise.all([
-    supabase.from("payroll_runs").select("period_start, period_end, pay_date, label, status").eq("id", id).maybeSingle(),
+    supabase.from("payroll_runs").select("period_start, period_end, pay_date, label, status, kind").eq("id", id).maybeSingle(),
     supabase
       .from("payslips")
       .select("id, run_id, gross_pay, total_deductions, net_pay, snapshot, employees(full_name, employee_no), payslip_lines(id, kind, code, label, amount, is_manual, sort_order)")

@@ -25,7 +25,7 @@ role-based access, audit log. Payroll, leave, and performance are later phases.
 - GPS is recorded on every time in/out (not enforced).
 
 ## Migrations
-Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage), 0006 (leave), 0007 (employee self-service), 0008 (payroll).
+Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage), 0006 (leave), 0007 (employee self-service), 0008 (payroll), 0009 (13th month).
 
 ## Leave rules (defaults, editable in Leave settings)
 - Types: Vacation 5, Sick 5, Emergency 3 (capped), Unpaid (uncapped). Days are per calendar year, no carry-over.
@@ -69,3 +69,16 @@ Employees see only their own payslips, and only after the run is finalized. Only
 - Finance reads attendance and leave only through `payroll_inputs` (totals per employee, no details).
 
 Tests for the calculations: `npm test`.
+
+## 13th month pay
+A second kind of payroll run, one per calendar year (Payroll page -> "13th month pay"). Each employee gets
+(basic salary earned in the year) / 12 under PD 851, taken from FINALIZED regular runs that END in that year:
+BASIC earnings minus ABSENCE and LATE deductions. Allowances, bonuses and other manual lines are excluded, and
+people who joined or left mid-year are pro-rated automatically. It follows the same draft -> finalize -> lock flow,
+and employees see it under My Payslips once finalized.
+
+- It refuses to run while draft regular runs for that year exist, so the figures are complete.
+- Basic pay earned outside the system (e.g. before the HRIS) can be added per payslip; one twelfth is added.
+- Due by December 24 by law. Nothing is withheld: 13th month and other benefits are tax-exempt up to PHP 90,000
+  combined; amounts above that are flagged for your accountant, not taxed automatically.
+- If a regular run was created with absence/late deductions switched off, the 13th month uses the full basic pay for it.

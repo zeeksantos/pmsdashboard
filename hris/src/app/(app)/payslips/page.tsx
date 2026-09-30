@@ -5,7 +5,7 @@ import { formatDate, formatPeso } from "@/lib/format";
 
 type Row = {
   id: string; gross_pay: number; net_pay: number;
-  payroll_runs: { period_start: string; period_end: string; pay_date: string } | null;
+  payroll_runs: { period_start: string; period_end: string; pay_date: string; kind: string } | null;
 };
 
 export default async function MyPayslipsPage() {
@@ -27,7 +27,7 @@ export default async function MyPayslipsPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("payslips")
-    .select("id, gross_pay, net_pay, payroll_runs(period_start, period_end, pay_date)")
+    .select("id, gross_pay, net_pay, payroll_runs(period_start, period_end, pay_date, kind)")
     .eq("employee_id", me.employee.id);
   const rows = ((data ?? []) as unknown as Row[]).sort((a, b) =>
     (b.payroll_runs?.period_end ?? "").localeCompare(a.payroll_runs?.period_end ?? ""));
@@ -50,7 +50,9 @@ export default async function MyPayslipsPage() {
               <tr key={r.id} className="border-b border-border last:border-0 hover:bg-surface-raised">
                 <td className="px-5 py-3">
                   <Link href={`/payslips/${r.id}`} className="text-accent hover:underline">
-                    {r.payroll_runs && `${formatDate(r.payroll_runs.period_start)} – ${formatDate(r.payroll_runs.period_end)}`}
+                    {r.payroll_runs && (r.payroll_runs.kind === "THIRTEENTH_MONTH"
+                      ? `13th month pay ${r.payroll_runs.period_end.slice(0, 4)}`
+                      : `${formatDate(r.payroll_runs.period_start)} – ${formatDate(r.payroll_runs.period_end)}`)}
                   </Link>
                 </td>
                 <td className="px-5 py-3">{r.payroll_runs && formatDate(r.payroll_runs.pay_date)}</td>

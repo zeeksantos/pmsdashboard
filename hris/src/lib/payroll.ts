@@ -170,3 +170,22 @@ export function computePayslip(args: {
   const deductions = round2(lines.filter((l) => l.kind === "DEDUCTION").reduce((s, l) => s + l.amount, 0));
   return { lines, snapshot, gross, deductions, net: round2(gross - deductions) };
 }
+
+// --- 13th month pay (PD 851) ---------------------------------------------------------------
+// Total basic salary actually earned in the calendar year, divided by 12. Absences and lateness
+// already reduce the basic salary earned. Allowances, bonuses and overtime are not included.
+
+export const THIRTEENTH_MONTH_BASIS = "13th month pay: basic salary earned in the year ÷ 12 (PD 851)";
+// 13th month pay and other benefits are income-tax exempt up to this combined amount (TRAIN law).
+export const THIRTEENTH_TAX_EXEMPT_LIMIT = 90_000;
+
+export function computeThirteenthMonth(basis: {
+  basic_pay: number;
+  absence_deduction: number;
+  late_deduction: number;
+}): { basicEarned: Money; amount: Money; taxableExcess: Money } {
+  const basicEarned = Math.max(0, round2(basis.basic_pay - basis.absence_deduction - basis.late_deduction));
+  const amount = round2(basicEarned / 12);
+  // At least this much is taxable: it ignores other benefits that count toward the same limit.
+  return { basicEarned, amount, taxableExcess: Math.max(0, round2(amount - THIRTEENTH_TAX_EXEMPT_LIMIT)) };
+}

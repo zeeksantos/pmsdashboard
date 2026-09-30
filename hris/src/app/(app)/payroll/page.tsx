@@ -7,9 +7,10 @@ import { formatDate, formatPeso, manilaToday } from "@/lib/format";
 import { suggestPeriod } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { NewRunForm } from "./NewRunForm";
+import { ThirteenthForm } from "./ThirteenthForm";
 
 type Run = {
-  id: string; label: string | null; period_start: string; period_end: string; pay_date: string;
+  id: string; label: string | null; kind: string; period_start: string; period_end: string; pay_date: string;
   status: "DRAFT" | "FINALIZED"; payslips: { net_pay: number }[];
 };
 
@@ -20,7 +21,7 @@ export default async function PayrollPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("payroll_runs")
-    .select("id, label, period_start, period_end, pay_date, status, payslips(net_pay)")
+    .select("id, label, kind, period_start, period_end, pay_date, status, payslips(net_pay)")
     .order("period_end", { ascending: false });
   const runs = (data ?? []) as unknown as Run[];
   const suggested = suggestPeriod(manilaToday());
@@ -32,6 +33,11 @@ export default async function PayrollPage() {
       <section className="rounded-xl border border-border bg-surface p-5">
         <h2 className="mb-4 text-base font-semibold">New payroll run</h2>
         <NewRunForm start={suggested.start} end={suggested.end} />
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-5">
+        <h2 className="mb-4 text-base font-semibold">13th month pay</h2>
+        <ThirteenthForm year={Number(manilaToday().slice(0, 4))} />
       </section>
 
       <section className="overflow-x-auto rounded-xl border border-border bg-surface">
@@ -51,9 +57,11 @@ export default async function PayrollPage() {
               <tr key={r.id} className="border-b border-border last:border-0 hover:bg-surface-raised">
                 <td className="px-5 py-3">
                   <Link href={`/payroll/${r.id}`} className="text-accent hover:underline">
-                    {formatDate(r.period_start)} – {formatDate(r.period_end)}
+                    {r.kind === "THIRTEENTH_MONTH"
+                      ? `13th month pay ${r.period_end.slice(0, 4)}`
+                      : `${formatDate(r.period_start)} – ${formatDate(r.period_end)}`}
                   </Link>
-                  {r.label && <span className="ml-2 text-xs text-muted">{r.label}</span>}
+                  {r.label && r.kind !== "THIRTEENTH_MONTH" && <span className="ml-2 text-xs text-muted">{r.label}</span>}
                 </td>
                 <td className="px-5 py-3">{formatDate(r.pay_date)}</td>
                 <td className="px-5 py-3">{r.payslips.length}</td>

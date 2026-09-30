@@ -9,6 +9,7 @@ import { deleteRun, finalizeRun, reopenRun } from "../actions";
 
 type Slip = {
   id: string; employee_id: string; gross_pay: number; total_deductions: number; net_pay: number;
+  snapshot: { basic_earned?: number; first_period?: string; last_period?: string; taxable_excess?: number } | null;
   employees: { full_name: string; employee_no: string } | null;
   payslip_lines: { kind: string; amount: number }[];
 };
@@ -23,7 +24,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     supabase.from("payroll_runs").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("payslips")
-      .select("id, employee_id, gross_pay, total_deductions, net_pay, employees(full_name, employee_no), payslip_lines(kind, amount)")
+      .select("id, employee_id, gross_pay, total_deductions, net_pay, snapshot, employees(full_name, employee_no), payslip_lines(kind, amount)")
       .eq("run_id", id),
     supabase.from("employees").select("id, full_name").eq("status", "ACTIVE").order("full_name"),
   ]);
@@ -36,6 +37,8 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const included = new Set(slips.map((s) => s.employee_id));
   const missing = (active ?? []).filter((e) => !included.has(e.id));
   const draft = run.status === "DRAFT";
+  const thirteenth = run.kind === "THIRTEENTH_MONTH";
+  const year = run.period_end.slice(0, 4);
   const opts = (run.options ?? {}) as Record<string, boolean>;
   const on = Object.entries({
     "absences": opts.deduct_absences, "late/undertime": opts.deduct_late,
@@ -50,10 +53,10 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
         <div>
           <Link href="/payroll" className="text-sm text-muted hover:text-foreground">← All payroll runs</Link>
           <h1 className="mt-2 text-2xl font-semibold">
-            {formatDate(run.period_start)} – {formatDate(run.period_end)}
+            {thirteenth ? `13th month pay ${year}` : `${formatDate(run.period_start)} – ${formatDate(run.period_end)}`}
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Pay date {formatDate(run.pay_date)}{run.label ? ` · ${run.label}` : ""} ·{" "}
+            Pay date {formatDate(run.pay_date)}{run.label && !thirteenth ? ` · ${run.label}` : ""} ·{" "}
             <span className={draft ? "text-warning" : "text-success"}>
               {draft ? "Draft: review before finalizing" : `Finalized ${run.finalized_at ? formatDateTime(run.finalized_at) : ""}`}
             </span>
@@ -86,21 +89,32 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className={card}><p className="text-xs text-muted">Gross pay</p><p className="mt-1 text-xl font-semibold">{formatPeso(sum((s) => Number(s.gross_pay)))}</p></div>
-        <div className={card}><p className="text-xs text-muted">Deductions</p><p className="mt-1 text-xl font-semibold">{formatPeso(sum((s) => Number(s.total_deductions)))}</p></div>
+        {thirteenth ? (
+          <div className={card}><p className="text-xs text-muted">Employees paid</p><p className="mt-1 text-xl font-semibold">{slips.length}</p></div>
+        ) : (
+          <div className={card}><p className="text-xs text-muted">Gross pay</p><p className="mt-1 text-xl font-semibold">{formatPeso(sum((s) => Number(s.gross_pay)))}</p></div>
+        )}
+        {!thirteenth && (
+          <div className={card}><p className="text-xs text-muted">Deductions</p><p className="mt-1 text-xl font-semibold">{formatPeso(sum((s) => Number(s.total_deductions)))}</p></div>
+        )}
         <div className={card}><p className="text-xs text-muted">Net pay (to release)</p><p className="mt-1 text-xl font-semibold text-accent">{formatPeso(sum((s) => Number(s.net_pay)))}</p></div>
-        <div className={card}><p className="text-xs text-muted">Employer contributions</p><p className="mt-1 text-xl font-semibold">{formatPeso(employerCost)}</p></div>
+        {!thirteenth && (
+          <div className={card}><p className="text-xs text-muted">Employer contributions</p><p className="mt-1 text-xl font-semibold">{formatPeso(employerCost)}</p></div>
+        )}
       </div>
 
       <p className="text-xs text-muted">
-        Included: {on.length ? on.join(", ") : "no automatic deductions"}. Rates used: {run.rates_version ?? "unknown"}.
-        Confirm the government rates with your accountant.
+        {thirteenth
+          ? `Basis: ${run.rates_version}. Uses basic salary from your finalized regular runs ending in ${year}; allowances, bonuses and other manual lines are not counted. Employees who joined or left during the year are pro-rated automatically. If someone earned basic pay outside this system, add it on their payslip.`
+          : `Included: ${on.length ? on.join(", ") : "no automatic deductions"}. Rates used: ${run.rates_version ?? "unknown"}. Confirm the government rates with your accountant.`}
       </p>
 
       {missing.length > 0 && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-          Not included (active, but no payslip): {missing.map((m) => m.full_name).join(", ")}. Most likely no salary is set,
-          or they were hired after the period. Set a salary, then delete this draft and create it again.
+          Not included (active, but no payslip): {missing.map((m) => m.full_name).join(", ")}.{" "}
+          {thirteenth
+            ? `They have no finalized payroll in ${year}. If they were paid outside this system, handle their 13th month separately.`
+            : "Most likely no salary is set, or they were hired after the period. Set a salary, then delete this draft and create it again."}
         </div>
       )}
 
@@ -109,9 +123,19 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
           <thead className="border-b border-border text-muted">
             <tr>
               <th className="px-5 py-3 font-medium">Employee</th>
-              <th className="px-5 py-3 text-right font-medium">Gross</th>
-              <th className="px-5 py-3 text-right font-medium">Deductions</th>
-              <th className="px-5 py-3 text-right font-medium">Net</th>
+              {thirteenth ? (
+                <>
+                  <th className="px-5 py-3 text-right font-medium">Basic earned</th>
+                  <th className="px-5 py-3 font-medium">Payroll covered</th>
+                  <th className="px-5 py-3 text-right font-medium">13th month</th>
+                </>
+              ) : (
+                <>
+                  <th className="px-5 py-3 text-right font-medium">Gross</th>
+                  <th className="px-5 py-3 text-right font-medium">Deductions</th>
+                  <th className="px-5 py-3 text-right font-medium">Net</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -121,9 +145,31 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
                   <Link href={`/payroll/${id}/${s.id}`} className="text-accent hover:underline">{s.employees?.full_name}</Link>
                   <span className="ml-2 text-xs text-muted">{s.employees?.employee_no}</span>
                 </td>
-                <td className="px-5 py-3 text-right">{formatPeso(s.gross_pay)}</td>
-                <td className="px-5 py-3 text-right">{formatPeso(s.total_deductions)}</td>
-                <td className="px-5 py-3 text-right font-medium">{formatPeso(s.net_pay)}</td>
+                {thirteenth ? (
+                  <>
+                    <td className="px-5 py-3 text-right">{formatPeso(s.snapshot?.basic_earned)}</td>
+                    <td className="px-5 py-3 text-xs text-muted">
+                      {s.snapshot?.first_period && s.snapshot?.last_period
+                        ? `${formatDate(s.snapshot.first_period)} – ${formatDate(s.snapshot.last_period)}`
+                        : "—"}
+                      {(s.snapshot?.first_period ?? "") > `${year}-01-05` && (
+                        <span className="ml-2 text-warning">starts late in the year</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-right font-medium">
+                      {formatPeso(s.net_pay)}
+                      {Number(s.snapshot?.taxable_excess ?? 0) > 0 && (
+                        <span className="block text-xs text-warning">over the ₱90,000 tax-free limit</span>
+                      )}
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="px-5 py-3 text-right">{formatPeso(s.gross_pay)}</td>
+                    <td className="px-5 py-3 text-right">{formatPeso(s.total_deductions)}</td>
+                    <td className="px-5 py-3 text-right font-medium">{formatPeso(s.net_pay)}</td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

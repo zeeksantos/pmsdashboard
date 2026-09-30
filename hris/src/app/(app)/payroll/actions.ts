@@ -6,7 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { canManagePayroll } from "@/lib/roles";
 import { currentSalary } from "@/lib/salary";
-import { RATES_VERSION, computePayslip, round2, type PayInputs, type RunOptions } from "@/lib/payroll";
+import {
+  RATES_VERSION, THIRTEENTH_MONTH_BASIS, computePayslip, computeThirteenthMonth, round2,
+  type PayInputs, type RunOptions,
+} from "@/lib/payroll";
 
 type InputRow = PayInputs & { employee_id: string };
 
@@ -157,4 +160,110 @@ export async function deleteRun(_prev: string | null, fd: FormData): Promise<str
   if (error) return error.message;
   revalidatePath("/payroll", "layout");
   redirect("/payroll");
+}
+
+type Basis = {
+  employee_id: string; basic_pay: number; absence_deduction: number; late_deduction: number;
+  runs_counted: number; first_period: string; last_period: string;
+};
+
+export async function createThirteenthRun(_prev: string | null, fd: FormData): Promise<string | null> {
+  const me = await requirePayroll();
+  if (!me) return "You don't have permission to run payroll.";
+
+  const year = Number(fd.get("year"));
+  const payDate = String(fd.get("pay_date") ?? "");
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return "Enter a valid year.";
+  if (!payDate) return "Enter the pay date.";
+
+  const supabase = await createClient();
+
+  // A 13th month based on incomplete figures would be wrong, so drafts for the year must be settled first.
+  const { data: drafts } = await supabase
+    .from("payroll_runs").select("id")
+    .eq("kind", "REGULAR").eq("status", "DRAFT")
+    .gte("period_end", `${year}-01-01`).lte("period_end", `${year}-12-31`);
+  if (drafts?.length) {
+    return `There ${drafts.length === 1 ? "is a draft payroll run" : `are ${drafts.length} draft payroll runs`} ending in ${year}. Finalize or delete ${drafts.length === 1 ? "it" : "them"} first so the 13th month uses complete figures.`;
+  }
+
+  const { data: basis, error: basisError } = await supabase.rpc("thirteenth_month_basis", { p_year: year });
+  if (basisError) return basisError.message;
+  const rows = (basis ?? []) as Basis[];
+  if (!rows.length) return `No finalized payroll runs ended in ${year}. Finalize your regular runs for that year first.`;
+
+  const computed = rows
+    .map((r) => {
+      const c = computeThirteenthMonth({
+        basic_pay: Number(r.basic_pay), absence_deduction: Number(r.absence_deduction), late_deduction: Number(r.late_deduction),
+      });
+      return { r, c };
+    })
+    .filter((x) => x.c.amount > 0);
+  if (!computed.length) return "Nobody has any basic pay earned for that year.";
+
+  const { data: run, error: runError } = await supabase
+    .from("payroll_runs")
+    .insert({
+      kind: "THIRTEENTH_MONTH",
+      label: String(fd.get("label") ?? "").trim() || `13th month pay ${year}`,
+      period_start: `${year}-01-01`, period_end: `${year}-12-31`, pay_date: payDate,
+      periods_per_month: 1, options: { thirteenth_month: true },
+      rates_version: THIRTEENTH_MONTH_BASIS, created_by: me.userId,
+    })
+    .select("id")
+    .single();
+  if (runError) {
+    return runError.message.includes("payroll_runs_period_start_period_end_key")
+      ? `There's already a 13th month run for ${year}. Open it from the list, or delete the draft to start again.`
+      : runError.message;
+  }
+  const fail = async (message: string) => {
+    await supabase.from("payroll_runs").delete().eq("id", run.id);
+    return message;
+  };
+
+  const { data: slips, error: slipError } = await supabase
+    .from("payslips")
+    .insert(computed.map(({ r, c }) => ({
+      run_id: run.id, employee_id: r.employee_id,
+      snapshot: {
+        kind: "THIRTEENTH", year, basic_pay: Number(r.basic_pay), absence_deduction: Number(r.absence_deduction),
+        late_deduction: Number(r.late_deduction), basic_earned: c.basicEarned, taxable_excess: c.taxableExcess,
+        runs_counted: r.runs_counted, first_period: r.first_period, last_period: r.last_period,
+      },
+    })))
+    .select("id, employee_id");
+  if (slipError) return fail(slipError.message);
+
+  const slipByEmp = new Map((slips ?? []).map((x) => [x.employee_id, x.id]));
+  const { error: lineError } = await supabase.from("payslip_lines").insert(
+    computed.map(({ r, c }) => ({
+      payslip_id: slipByEmp.get(r.employee_id)!, kind: "EARNING", code: "THIRTEENTH", sort_order: 0,
+      label: `13th month pay (₱${c.basicEarned.toLocaleString("en-PH", { minimumFractionDigits: 2 })} basic earned ÷ 12)`,
+      amount: c.amount,
+    }))
+  );
+  if (lineError) return fail(lineError.message);
+
+  revalidatePath("/payroll");
+  redirect(`/payroll/${run.id}`);
+}
+
+// Basic pay earned outside this system (e.g. before the HRIS was set up) still counts toward the 13th month.
+export async function addPriorBasic(_prev: string | null, fd: FormData): Promise<string | null> {
+  if (!(await requirePayroll())) return "Not allowed.";
+  const payslipId = String(fd.get("payslip_id") ?? "");
+  const basic = round2(Number(fd.get("basic")));
+  if (!(basic > 0)) return "Enter the basic pay earned, greater than zero.";
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("payslip_lines").insert({
+    payslip_id: payslipId, kind: "EARNING", code: "THIRTEENTH_PRIOR", is_manual: true, sort_order: 500,
+    label: `13th month on ₱${basic.toLocaleString("en-PH", { minimumFractionDigits: 2 })} basic earned elsewhere (÷ 12)`,
+    amount: round2(basic / 12),
+  });
+  if (error) return error.message;
+  revalidatePath("/payroll", "layout");
+  return null;
 }

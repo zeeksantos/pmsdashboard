@@ -1,7 +1,7 @@
 // Run with: npm test
 import test from "node:test";
 import assert from "node:assert/strict";
-import { annualTax, computePayslip, monthlyWithholding, pagibig, philhealth, sss } from "../src/lib/payroll.ts";
+import { annualTax, computePayslip, computeThirteenthMonth, monthlyWithholding, pagibig, philhealth, sss } from "../src/lib/payroll.ts";
 import { suggestPeriod } from "../src/lib/dates.ts";
 
 const all = { deduct_absences: true, deduct_late: true, gov_contributions: true, withhold_tax: true };
@@ -114,4 +114,24 @@ test("suggested period is the most recently finished semi-monthly one", () => {
   assert.deepEqual(suggestPeriod("2026-03-02"), { start: "2026-02-16", end: "2026-02-28" });
   assert.deepEqual(suggestPeriod("2028-03-02"), { start: "2028-02-16", end: "2028-02-29" }); // leap year
   assert.deepEqual(suggestPeriod("2027-01-05"), { start: "2026-12-16", end: "2026-12-31" }); // year rollover
+});
+
+test("13th month = basic earned in the year / 12, after absences and lateness", () => {
+  // full year at 30,000/month: 360,000 basic -> 30,000
+  assert.deepEqual(
+    computeThirteenthMonth({ basic_pay: 360000, absence_deduction: 0, late_deduction: 0 }),
+    { basicEarned: 360000, amount: 30000, taxableExcess: 0 });
+  // absences and lateness reduce the basic salary earned
+  assert.equal(computeThirteenthMonth({ basic_pay: 240000, absence_deduction: 1000, late_deduction: 200 }).amount, 19900);
+  // joined mid-year: only six months of basic, so pro-rated automatically (60,000 / 12)
+  assert.equal(computeThirteenthMonth({ basic_pay: 60000, absence_deduction: 0, late_deduction: 0 }).amount, 5000);
+  // rounds to the centavo
+  assert.equal(computeThirteenthMonth({ basic_pay: 100000, absence_deduction: 0, late_deduction: 0 }).amount, 8333.33);
+});
+
+test("13th month never goes negative, and flags the part above the 90,000 tax-exempt limit", () => {
+  assert.equal(computeThirteenthMonth({ basic_pay: 1000, absence_deduction: 5000, late_deduction: 0 }).amount, 0);
+  const big = computeThirteenthMonth({ basic_pay: 1_500_000, absence_deduction: 0, late_deduction: 0 });
+  assert.equal(big.amount, 125000);
+  assert.equal(big.taxableExcess, 35000);
 });

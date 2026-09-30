@@ -25,7 +25,7 @@ export default async function MyPayslipPage({ params }: { params: Promise<{ id: 
     payslip_lines: SlipLine[];
   };
   const { data: run } = await supabase
-    .from("payroll_runs").select("period_start, period_end, pay_date, label").eq("id", s.run_id).maybeSingle();
+    .from("payroll_runs").select("period_start, period_end, pay_date, label, kind").eq("id", s.run_id).maybeSingle();
   if (!run) notFound();
 
   return (
