@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Banknote, CalendarDays, ClipboardCheck, ClipboardList, Clock, Home, LogOut, Network, Plane, Receipt, Settings, Shield, User, Users, Wallet } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const icons = {
   home: Home,
@@ -46,11 +47,14 @@ export function Sidebar({
             {name} · {roleLabel}
           </p>
         </div>
-        <form action={signOut} className="md:hidden">
-          <button aria-label="Sign out" className="p-2 text-muted hover:text-foreground">
-            <LogOut size={18} />
-          </button>
-        </form>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <form action={signOut}>
+            <button aria-label="Sign out" className="p-2 text-muted hover:text-foreground">
+              <LogOut size={18} />
+            </button>
+          </form>
+        </div>
       </div>
 
       <nav className="flex gap-1 overflow-x-auto px-2 pb-2 md:flex-col md:px-3">
@@ -81,6 +85,10 @@ export function Sidebar({
           );
         })}
       </nav>
+
+      <div className="hidden px-3 pt-2 md:block">
+        <ThemeToggle />
+      </div>
 
       <form action={signOut} className="hidden px-3 py-4 md:block">
         <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-surface-raised hover:text-foreground">
