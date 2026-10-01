@@ -25,7 +25,7 @@ role-based access, audit log. Payroll, leave, and performance are later phases.
 - GPS is recorded on every time in/out (not enforced).
 
 ## Migrations
-Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage), 0006 (leave), 0007 (employee self-service), 0008 (payroll), 0009 (13th month).
+Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + set role), 0004 (salary constraints), 0005 (document storage), 0006 (leave), 0007 (employee self-service), 0008 (payroll), 0009 (13th month), 0010 (function access hardening: helper functions only for signed-in users).
 
 ## Leave rules (defaults, editable in Leave settings)
 - Types: Vacation 5, Sick 5, Emergency 3 (capped), Unpaid (uncapped). Days are per calendar year, no carry-over.
@@ -82,3 +82,9 @@ and employees see it under My Payslips once finalized.
 - Due by December 24 by law. Nothing is withheld: 13th month and other benefits are tax-exempt up to PHP 90,000
   combined; amounts above that are flagged for your accountant, not taxed automatically.
 - If a regular run was created with absence/late deductions switched off, the 13th month uses the full basic pay for it.
+
+## Light / dark mode
+Follows the device by default; a System / Light / Dark switch (menu, and top-right on the sign-in pages) overrides it
+and is remembered per browser. Colors are the named tokens in `src/app/globals.css` (`:root` = dark,
+`:root[data-theme="light"]` = light); the saved choice is applied by a tiny script in the root layout before the page
+paints, so there is no flash. Printing (payslips) is always on white. Logic: `src/lib/theme.ts`, switch: `src/components/ThemeToggle.tsx`.
