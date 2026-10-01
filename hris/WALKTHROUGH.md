@@ -19,7 +19,7 @@ private/incognito window, or two different browsers, and sign out before switchi
       set a database password and save it somewhere safe.
 - [ ] Wait until the project says it is ready (about 2 minutes).
 
-### 0.2 Run the 9 database files, in order
+### 0.2 Run the 10 database files, in order
 For each file below: open it from the `hris/supabase/migrations/` folder, select everything and copy it,
 then in Supabase go to **SQL Editor → New query**, paste, click **Run**.
 
@@ -34,6 +34,7 @@ then in Supabase go to **SQL Editor → New query**, paste, click **Run**.
 - [ ] `0007_employee_self_service.sql`
 - [ ] `0008_payroll.sql`
 - [ ] `0009_thirteenth_month.sql`
+- [ ] `0010_function_access_hardening.sql` (locks helper functions to signed-in users)
 
 Run each file **once**. If one fails halfway, send me the error before running anything else, because
 re-running a half-applied file causes "already exists" errors.
@@ -440,7 +441,7 @@ Send me:
 **Do this after the walkthrough passes.**
 
 ### Data and accounts
-- [ ] **Use a fresh Supabase project for real data.** Run the nine files again on a new project. The audit log
+- [ ] **Use a fresh Supabase project for real data.** Run the ten files again on a new project. The audit log
       is permanent by design, so test entries can't be removed from the test project. Keep the test project
       as a practice area.
 - [ ] Turn on **two-step verification** on your Supabase, GitHub and Vercel accounts. They can reach everyone's
