@@ -1,4 +1,7 @@
-export const employmentTypes = ["REGULAR", "CONTRACTUAL", "PART_TIME"] as const;
+export const employmentTypes = ["REGULAR", "CONTRACTUAL", "PART_TIME", "PROJECT_BASED"] as const;
+
+// Types that have an end date (a contract, or the end of the project).
+export const endDatedTypes: readonly string[] = ["CONTRACTUAL", "PROJECT_BASED"];
 export const employmentStatuses = ["ACTIVE", "ON_LEAVE", "RESIGNED", "TERMINATED"] as const;
 export const civilStatuses = ["SINGLE", "MARRIED", "WIDOWED", "SEPARATED"] as const;
 export const genders = ["MALE", "FEMALE"] as const;
@@ -13,8 +16,11 @@ export const weekdays = [
   { value: 0, label: "Sun" },
 ];
 
+const labelOverrides: Record<string, string> = { PROJECT_BASED: "Project Based" };
+
 export function label(value: string | null | undefined): string {
   if (!value) return "—";
+  if (labelOverrides[value]) return labelOverrides[value];
   return value.charAt(0) + value.slice(1).toLowerCase().replace(/_/g, " ");
 }
 

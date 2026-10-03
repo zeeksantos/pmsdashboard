@@ -7,6 +7,7 @@ import {
   civilStatuses,
   employmentStatuses,
   employmentTypes,
+  endDatedTypes,
   genders,
   label,
   weekdays,
@@ -109,8 +110,8 @@ export function EmployeeForm({
         <Field name="Regularization date">
           <input name="regularization_date" type="date" defaultValue={v.regularization_date} className={input} />
         </Field>
-        {employmentType === "CONTRACTUAL" && (
-          <Field name="Contract end date">
+        {endDatedTypes.includes(employmentType) && (
+          <Field name={employmentType === "PROJECT_BASED" ? "Project end date" : "Contract end date"}>
             <input name="contract_end_date" type="date" defaultValue={v.contract_end_date} className={input} />
           </Field>
         )}

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import { canManageRecords, canViewSalaries } from "@/lib/roles";
 import { formatDate } from "@/lib/format";
-import { formatClock, label, weekdays } from "@/lib/employees";
+import { endDatedTypes, formatClock, label, weekdays } from "@/lib/employees";
 import { Documents } from "./Documents";
 
 type Emp = {
@@ -120,8 +120,8 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
         <Item name="Status" value={label(e.status)} />
         <Item name="Date hired" value={date(e.date_hired)} />
         <Item name="Regularization date" value={date(e.regularization_date)} />
-        {e.employment_type === "CONTRACTUAL" && (
-          <Item name="Contract end date" value={date(e.contract_end_date)} />
+        {endDatedTypes.includes(e.employment_type) && (
+          <Item name={e.employment_type === "PROJECT_BASED" ? "Project end date" : "Contract end date"} value={date(e.contract_end_date)} />
         )}
         <Item
           name="Reports to"

@@ -8,7 +8,7 @@ import {
   canViewTeamAttendance,
 } from "@/lib/roles";
 import { formatDate, formatTime, manilaToday } from "@/lib/format";
-import { label } from "@/lib/employees";
+import { endDatedTypes, employmentTypes, label } from "@/lib/employees";
 import { manilaMinutesNow } from "@/lib/dates";
 import { currentSalary, type Salary } from "@/lib/salary";
 import {
@@ -138,7 +138,7 @@ export default async function HomePage() {
   const pendingLeave = pendingLeaveRes.count ?? 0;
 
   // Headcount breakdowns
-  const byType = ["REGULAR", "CONTRACTUAL", "PART_TIME"].map((t) => ({
+  const byType = employmentTypes.map((t) => ({
     type: t, count: active.filter((e) => e.employment_type === t).length,
   }));
   const deptCounts = new Map<string, number>();
@@ -149,7 +149,7 @@ export default async function HomePage() {
 
   // HR attention lists
   const contractsEnding = active
-    .filter((e) => e.employment_type === "CONTRACTUAL" && e.contract_end_date && daysUntil(today, e.contract_end_date) <= WINDOW_DAYS)
+    .filter((e) => endDatedTypes.includes(e.employment_type) && e.contract_end_date && daysUntil(today, e.contract_end_date) <= WINDOW_DAYS)
     .sort((a, b) => a.contract_end_date!.localeCompare(b.contract_end_date!))
     .map((e) => {
       const d = daysUntil(today, e.contract_end_date!);
@@ -275,7 +275,7 @@ export default async function HomePage() {
         <>
           <Heading>Needs attention</Heading>
           <div className="grid gap-4 md:grid-cols-2">
-            <Panel title={`Contracts ending (next ${WINDOW_DAYS} days)`} empty="No contracts ending soon." items={contractsEnding} />
+            <Panel title={`Contracts and projects ending (next ${WINDOW_DAYS} days)`} empty="No contracts ending soon." items={contractsEnding} />
             <Panel title={`Regularization due (next ${WINDOW_DAYS} days)`} note="Non-regular staff with a regularization date." empty="Nothing due." items={regularizations} />
             <Panel title="Active with no biodata" empty="All active employees have biodata." items={noBiodata.map((e) => ({ id: e.id, name: e.full_name }))} />
             <Panel title="Active with no schedule" note="They can time in, but lateness can't be calculated." empty="Everyone has a schedule." items={noSchedule.map((e) => ({ id: e.id, name: e.full_name }))} />
