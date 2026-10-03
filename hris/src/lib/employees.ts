@@ -16,7 +16,8 @@ export const weekdays = [
   { value: 0, label: "Sun" },
 ];
 
-const labelOverrides: Record<string, string> = { PROJECT_BASED: "Project Based" };
+// Employment types are shown in title case.
+const labelOverrides: Record<string, string> = { PART_TIME: "Part Time", PROJECT_BASED: "Project Based" };
 
 export function label(value: string | null | undefined): string {
   if (!value) return "—";
