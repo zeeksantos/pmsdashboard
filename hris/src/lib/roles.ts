@@ -47,3 +47,9 @@ export const payrollStaff: Role[] = ["finance", "admin", "owner"];
 export function canManagePayroll(role: Role) {
   return payrollStaff.includes(role);
 }
+
+// Who may create logins, change roles and reset passwords (matches the admin_* database functions).
+export const userManagers: Role[] = ["admin", "owner"];
+export function canManageUsers(role: Role) {
+  return userManagers.includes(role);
+}

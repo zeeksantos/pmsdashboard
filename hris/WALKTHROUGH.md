@@ -87,7 +87,7 @@ union all select 'leave types', count(*), 4 from leave_types;
 - [ ] Open the deployed address. **See:** the sign-in page.
 
 ### 0.6 Create the six test logins and test data
-- [ ] In Supabase go to **Authentication → Users → Add user → Create new user**. Create these six, all with
+- [ ] In Supabase go to **Authentication → Users → Add user → Create new user**. Create these six (or use People → Users in the app once you can sign in), all with
       **Auto Confirm User** ticked and the same password (for example `Test-Pass-123`).
       Replace `YOU` with your Gmail name (e.g. `maria` gives `maria+owner@gmail.com`). Every one of these
       arrives in your single inbox.
@@ -414,6 +414,18 @@ Clock-ins can't be back-dated in the app, so use a script.
 - [ ] Ask for a code for an email that doesn't exist. **See:** the **same** "we've emailed a code" message.
 - [ ] Try mismatched passwords, and a password of 5 characters. **See:** a clear error each time.
 - [ ] Sign in as Eli with the new password. Set it back via Settings if you want.
+
+## Part 13b: Users and calendar (Owner)
+- [ ] Open **People → Users**. **See:** the "Add a user" form and every login with its access level.
+- [ ] Add a test user: type an email, click **Generate** for a password, choose **Employee**, click **Create user**.
+      **See:** "Created …", and the user in the list below.
+- [ ] Sign in with that email and password in a private window. **See:** the dashboard with employee-only menus.
+- [ ] Back as Owner, change that user to **HR** and click **Save**. Refresh their window. **See:** HR menus appear.
+- [ ] Click **Set a new password** on that user, generate one, **Set password**. **See:** "Password changed."
+- [ ] Try changing **your own** access level. **See:** the Save button is off for yourself.
+- [ ] Open the **Audit Log**. **See:** entries for the new login and the role change.
+- [ ] On the dashboard calendar click a day with a dot. **See:** what is on that day. Use the arrows to go to
+      other months, and **Today** to come back.
 
 ## Part 14: Phone check
 

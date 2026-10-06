@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { canManagePayroll, canViewAuditLog, canViewDirectory, canViewSalaries, canViewTeamAttendance, roleLabels } from "@/lib/roles";
+import { canManagePayroll, canManageUsers, canViewAuditLog, canViewDirectory, canViewSalaries, canViewTeamAttendance, roleLabels } from "@/lib/roles";
 import { AppShell } from "@/components/AppShell";
 import { simplifyGroups, type NavGroup, type NavLink } from "@/lib/nav";
 import { signOut } from "../login/actions";
@@ -28,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     people.push({ href: "/employees", label: "Employees" });
     people.push({ href: "/org-chart", label: "Org Chart" });
   }
+  if (canManageUsers(me.role)) people.push({ href: "/users", label: "Users" });
 
   const pay: NavLink[] = [];
   if (me.employee) pay.push({ href: "/payslips", label: "My Payslips" });

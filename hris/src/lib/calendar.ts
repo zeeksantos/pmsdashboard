@@ -40,3 +40,27 @@ export function monthTitle(year: number, month: number): string {
     timeZone: "UTC",
   });
 }
+
+export function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
+  const index = year * 12 + (month - 1) + delta;
+  return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+}
+
+// The date a yearly event (birthday, work anniversary) falls on in the given month, or null if it
+// isn't in that month. Feb 29 events land on Feb 28 in years that have no Feb 29.
+export function yearlyDate(original: string, year: number, month: number): string | null {
+  const [, m, d] = original.split("-").map(Number);
+  if (m !== month) return null;
+  return `${year}-${pad(month)}-${pad(Math.min(d, daysInMonth(year, month)))}`;
+}
+
+export type CalendarEventKind =
+  | "leave" | "leave-pending" | "team-leave" | "attendance" | "birthday" | "anniversary" | "contract" | "regularization";
+
+export type CalendarEvent = {
+  date: string; // YYYY-MM-DD
+  kind: CalendarEventKind;
+  title: string;
+  detail?: string;
+  href?: string;
+};

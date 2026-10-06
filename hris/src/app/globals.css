@@ -5,10 +5,10 @@
    --sidebar is the brand red-to-orange gradient frame around the app: it is the same in both themes, just deeper in dark. */
 :root {
   color-scheme: dark;
-  --sidebar: #3b0d14;
+  --sidebar: #3d1214;
   --sidebar-foreground: #fdecec;
-  --sidebar-muted: #f0c4c6;
-  --sidebar-bg: linear-gradient(165deg, #3b0d14 0%, #6a1a14 55%, #8a3510 100%);
+  --sidebar-muted: #f7d4d2;
+  --sidebar-bg: linear-gradient(165deg, #3d1214 0%, #70281a 40%, #94400f 100%);
   --background: #130e0f;
   --surface: #1d1517;
   --surface-raised: #2a1d20;
@@ -24,10 +24,10 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --sidebar: #a31d2b;
+  --sidebar: #8f2f34;
   --sidebar-foreground: #fff5f5;
   --sidebar-muted: #fff0ec;
-  --sidebar-bg: linear-gradient(165deg, #a31d2b 0%, #c02e1f 50%, #ae4a0c 100%);
+  --sidebar-bg: linear-gradient(165deg, #8f2f34 0%, #ad4a2b 35%, #b8550f 100%);
   --background: #fbf6f4;
   --surface: #ffffff;
   --surface-raised: #f6ecea;

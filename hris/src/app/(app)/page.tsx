@@ -22,8 +22,9 @@ import {
 } from "@/lib/dashboard";
 import { cn } from "@/lib/cn";
 import { Avatar } from "@/components/Avatar";
-import { MiniCalendar } from "@/components/MiniCalendar";
-import { expandRange, monthOf } from "@/lib/calendar";
+import { CalendarPanel } from "@/components/CalendarPanel";
+import { loadCalendarEvents } from "@/lib/calendar-data";
+import { monthOf } from "@/lib/calendar";
 import { Banknote, Clock, Plane, Receipt, User, Users, ClipboardList, type LucideIcon } from "lucide-react";
 
 type Emp = {
@@ -118,7 +119,7 @@ export default async function HomePage() {
   const showSalary = canViewSalaries(me.role);
 
   const month = monthOf(today);
-  const [myLog, profileRes, myBioRes, myLeaveRes, employeesRes, schedulesRes, logsRes, bioRes, salariesRes, leaveRes, pendingLeaveRes] = await Promise.all([
+  const [myLog, profileRes, myBioRes, calendarEvents, employeesRes, schedulesRes, logsRes, bioRes, salariesRes, leaveRes, pendingLeaveRes] = await Promise.all([
     me.employee
       ? supabase.from("attendance_logs").select("time_in, time_out, late_minutes")
           .eq("employee_id", me.employee.id).eq("work_date", today).maybeSingle()
@@ -131,11 +132,7 @@ export default async function HomePage() {
     me.employee
       ? supabase.from("employee_biodata").select("phone").eq("employee_id", me.employee.id).maybeSingle()
       : Promise.resolve({ data: null }),
-    me.employee
-      ? supabase.from("leave_requests").select("start_date, end_date, status")
-          .eq("employee_id", me.employee.id).in("status", ["APPROVED", "PENDING"])
-          .lte("start_date", month.last).gte("end_date", month.first)
-      : Promise.resolve({ data: null }),
+    loadCalendarEvents(me, month.year, month.month),
     showDirectory
       ? supabase.from("employees")
           .select("id, full_name, employment_type, status, user_id, regularization_date, contract_end_date, departments(name)")
@@ -228,9 +225,6 @@ export default async function HomePage() {
   const profile = profileRes.data as unknown as {
     employee_no: string; date_hired: string | null; positions: { title: string } | null; departments: { name: string } | null;
   } | null;
-  const leaveRows = (myLeaveRes.data ?? []) as { start_date: string; end_date: string; status: string }[];
-  const leaveDays = (status: string) =>
-    leaveRows.filter((r) => r.status === status).flatMap((r) => expandRange(r.start_date, r.end_date));
   const displayName = me.employee?.full_name ?? me.email ?? "User";
   const when = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" }) : "—";
@@ -307,13 +301,7 @@ export default async function HomePage() {
               </Link>
             </section>
           )}
-          <MiniCalendar
-            year={month.year}
-            month={month.month}
-            today={today}
-            approved={leaveDays("APPROVED")}
-            pending={leaveDays("PENDING")}
-          />
+          <CalendarPanel year={month.year} month={month.month} today={today} events={calendarEvents} />
         </aside>
       </div>
 

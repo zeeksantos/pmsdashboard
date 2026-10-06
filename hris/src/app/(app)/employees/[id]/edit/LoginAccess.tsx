@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { linkLogin, setRole } from "../../actions";
 import { allRoles, roleLabels } from "@/lib/roles";
@@ -25,8 +26,8 @@ export function LoginAccess({
     <section className="max-w-4xl rounded-xl border border-border bg-surface p-5">
       <h2 className="text-base font-semibold">Login access</h2>
       <p className="mt-1 text-sm text-muted">
-        Create the person&apos;s login in Supabase (Authentication → Users), then link it here by
-        email. Status: {linked ? "linked" : "not linked"}.
+        Create logins on the <Link href="/users" className="text-accent hover:underline">Users</Link> page, then
+        link one here by email. Status: {linked ? "linked" : "not linked"}.
       </p>
 
       <form action={linkAction} className="mt-4 flex flex-wrap gap-2">
