@@ -109,16 +109,16 @@ export function AppShell({
 
   const brand = (
     <div className="flex items-center gap-3 px-5 py-5">
-      <Logo size={40} />
+      <Logo size={64} className="rounded-2xl" />
       <div>
-        <p className="text-lg font-semibold leading-tight text-sidebar-foreground">Z-Fast HRIS</p>
+        <p className="text-xl font-semibold leading-tight text-sidebar-foreground">Z-Fast HRIS</p>
         <p className="text-xs text-sidebar-muted">{roleLabel}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-sidebar md:flex-row">
+    <div className="flex min-h-screen flex-col md:flex-row">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col print:hidden md:flex">
         {brand}
@@ -130,7 +130,7 @@ export function AppShell({
       {/* Mobile top bar */}
       <header className="flex items-center justify-between px-4 py-3 print:hidden md:hidden">
         <div className="flex items-center gap-2">
-          <Logo size={32} />
+          <Logo size={40} />
           <p className="font-semibold text-sidebar-foreground">Z-Fast HRIS</p>
         </div>
         <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export function AppShell({
         <div className="fixed inset-0 z-40 md:hidden print:hidden">
           <button type="button" aria-label="Close menu" className="absolute inset-0 bg-black/50"
             onClick={() => setOpenFor(null)} />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-sidebar shadow-xl">
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-brand shadow-xl">
             <div className="flex items-center justify-between pr-3">
               {brand}
               <button type="button" aria-label="Close menu" onClick={() => setOpenFor(null)}

@@ -2,12 +2,13 @@
 
 /* Dark is the default. The theme script in the root layout sets data-theme="light" or "dark"
    (from the saved choice, or the device setting) before the page paints.
-   --sidebar is the brand-red frame around the app: it is the same in both themes, just deeper in dark. */
+   --sidebar is the brand red-to-orange gradient frame around the app: it is the same in both themes, just deeper in dark. */
 :root {
   color-scheme: dark;
   --sidebar: #3b0d14;
   --sidebar-foreground: #fdecec;
-  --sidebar-muted: #e8b4b8;
+  --sidebar-muted: #f0c4c6;
+  --sidebar-bg: linear-gradient(165deg, #3b0d14 0%, #6a1a14 55%, #8a3510 100%);
   --background: #130e0f;
   --surface: #1d1517;
   --surface-raised: #2a1d20;
@@ -25,7 +26,8 @@
   color-scheme: light;
   --sidebar: #a31d2b;
   --sidebar-foreground: #fff5f5;
-  --sidebar-muted: #f6cfd2;
+  --sidebar-muted: #fff0ec;
+  --sidebar-bg: linear-gradient(165deg, #a31d2b 0%, #c02e1f 50%, #ae4a0c 100%);
   --background: #fbf6f4;
   --surface: #ffffff;
   --surface-raised: #f6ecea;
@@ -59,9 +61,12 @@
 }
 
 body {
-  background: var(--sidebar);
+  background: var(--sidebar-bg) fixed;
+  background-color: var(--sidebar);
   color: var(--foreground);
 }
+
+.bg-brand { background: var(--sidebar-bg); background-color: var(--sidebar); }
 
 /* Shortcut tiles on the dashboard. White text on these is at least 3:1 (large bold text). */
 .tile-red { background-image: linear-gradient(135deg, #9f1239, #d9302f); }
@@ -75,6 +80,7 @@ body {
   :root[data-theme="light"] {
     color-scheme: light;
     --sidebar: #ffffff;
+    --sidebar-bg: #ffffff;
     --background: #ffffff;
     --surface: #ffffff;
     --surface-raised: #ffffff;
