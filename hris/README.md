@@ -36,7 +36,7 @@ Run in order: 0001 (tables), 0002 (functions, audit, RLS), 0003 (link login + se
 
 ## Employee self-service
 Employees can edit their own nickname, phone, personal email, address, and emergency contact
-(My Account), and change their password. Everything else stays HR-only. Enforced by the
+(Settings), and change their password. Everything else stays HR-only. Enforced by the
 `update_my_contact` database function; employees have no write policy on biodata.
 
 ## Forgot password (emailed code)
@@ -84,7 +84,7 @@ and employees see it under My Payslips once finalized.
 - If a regular run was created with absence/late deductions switched off, the 13th month uses the full basic pay for it.
 
 ## Light / dark mode
-Follows the device by default; a System / Light / Dark switch (menu, and top-right on the sign-in pages) overrides it
+Follows the device by default; an Auto / Light / Dark switch (Settings page, and top-right on the sign-in pages) overrides it
 and is remembered per browser. Colors are the named tokens in `src/app/globals.css` (`:root` = dark,
 `:root[data-theme="light"]` = light); the saved choice is applied by a tiny script in the root layout before the page
 paints, so there is no flash. Printing (payslips) is always on white. Logic: `src/lib/theme.ts`, switch: `src/components/ThemeToggle.tsx`.

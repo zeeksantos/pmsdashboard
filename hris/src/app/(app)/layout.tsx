@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { canManagePayroll, canViewAuditLog, canViewDirectory, canViewSalaries, canViewTeamAttendance, roleLabels } from "@/lib/roles";
-import { Sidebar, type NavItem } from "./Sidebar";
+import { AppShell } from "@/components/AppShell";
+import { simplifyGroups, type NavGroup, type NavLink } from "@/lib/nav";
 import { signOut } from "../login/actions";
 
 // Per-user pages: always render on request, never at build time.
@@ -11,51 +12,45 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const me = await getCurrentUser();
   if (!me) redirect("/login");
 
-  const nav: NavItem[] = [
-    { href: "/", label: "Home", icon: "home" },
-    { href: "/time-clock", label: "Time Clock", icon: "clock" },
-    { href: "/attendance", label: "My Attendance", icon: "calendar" },
+  const time: NavLink[] = [
+    { href: "/time-clock", label: "Time Clock" },
+    { href: "/attendance", label: "My Attendance" },
   ];
-  if (me.employee) {
-    nav.push({ href: `/employees/${me.employee.id}`, label: "My Profile", icon: "user" });
-  }
-  nav.push({ href: "/account", label: "My Account", icon: "settings" });
-  if (me.employee) {
-    nav.push({ href: "/leave", label: "Leave", icon: "plane" });
-  }
-  if (canViewTeamAttendance(me.role)) {
-    nav.push({ href: "/leave/approvals", label: "Leave Approvals", icon: "approve" });
-  }
+  if (canViewTeamAttendance(me.role)) time.push({ href: "/team-attendance", label: "Team Attendance" });
+
+  const leave: NavLink[] = [];
+  if (me.employee) leave.push({ href: "/leave", label: "My Leave" });
+  if (canViewTeamAttendance(me.role)) leave.push({ href: "/leave/approvals", label: "Leave Approvals" });
+
+  const people: NavLink[] = [];
+  if (me.employee) people.push({ href: `/employees/${me.employee.id}`, label: "My Profile" });
   if (canViewDirectory(me.role)) {
-    nav.push({ href: "/employees", label: "Employees", icon: "users" });
-    nav.push({ href: "/org-chart", label: "Org Chart", icon: "network" });
-  }
-  if (me.employee) {
-    nav.push({ href: "/payslips", label: "My Payslips", icon: "receipt" });
-  }
-  if (canViewSalaries(me.role)) {
-    nav.push({ href: "/salaries", label: "Salaries", icon: "wallet" });
-  }
-  if (canManagePayroll(me.role)) {
-    nav.push({ href: "/payroll", label: "Payroll", icon: "banknote" });
-  }
-  if (canViewTeamAttendance(me.role)) {
-    nav.push({ href: "/team-attendance", label: "Team Attendance", icon: "clipboard" });
+    people.push({ href: "/employees", label: "Employees" });
+    people.push({ href: "/org-chart", label: "Org Chart" });
   }
 
-  if (canViewAuditLog(me.role)) {
-    nav.push({ href: "/audit-log", label: "Audit Log", icon: "shield" });
-  }
+  const pay: NavLink[] = [];
+  if (me.employee) pay.push({ href: "/payslips", label: "My Payslips" });
+  if (canViewSalaries(me.role)) pay.push({ href: "/salaries", label: "Salaries" });
+  if (canManagePayroll(me.role)) pay.push({ href: "/payroll", label: "Payroll" });
+
+  const groups: NavGroup[] = [
+    { label: "Dashboard", icon: "dashboard", href: "/" },
+    { label: "Time & Attendance", icon: "clock", items: time },
+    { label: "Leave", icon: "plane", items: leave },
+    { label: "People", icon: "users", items: people },
+    { label: "Payroll", icon: "banknote", items: pay },
+  ];
+  if (canViewAuditLog(me.role)) groups.push({ label: "Audit Log", icon: "shield", href: "/audit-log" });
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <Sidebar
-        items={nav}
-        name={me.employee?.full_name ?? me.email ?? "User"}
-        roleLabel={roleLabels[me.role]}
-        signOut={signOut}
-      />
-      <main className="flex-1 p-4 md:p-8">{children}</main>
-    </div>
+    <AppShell
+      groups={simplifyGroups(groups)}
+      name={me.employee?.full_name ?? me.email ?? "User"}
+      roleLabel={roleLabels[me.role]}
+      signOut={signOut}
+    >
+      {children}
+    </AppShell>
   );
 }

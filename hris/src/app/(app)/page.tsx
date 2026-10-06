@@ -2,10 +2,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
 import {
+  canManagePayroll,
   canManageRecords,
   canViewDirectory,
   canViewSalaries,
   canViewTeamAttendance,
+  roleLabels,
 } from "@/lib/roles";
 import { formatDate, formatTime, manilaToday } from "@/lib/format";
 import { endDatedTypes, employmentTypes, label } from "@/lib/employees";
@@ -19,6 +21,10 @@ import {
   type Schedule,
 } from "@/lib/dashboard";
 import { cn } from "@/lib/cn";
+import { Avatar } from "@/components/Avatar";
+import { MiniCalendar } from "@/components/MiniCalendar";
+import { expandRange, monthOf } from "@/lib/calendar";
+import { Banknote, Clock, Plane, Receipt, User, Users, ClipboardList, type LucideIcon } from "lucide-react";
 
 type Emp = {
   id: string;
@@ -73,6 +79,29 @@ function Panel({ title, empty, items, note }: {
   );
 }
 
+function QuickTile({ href, label, hint, Icon, color }: {
+  href: string; label: string; hint: string; Icon: LucideIcon; color: string;
+}) {
+  return (
+    <Link href={href} className={cn("flex items-center gap-3 rounded-2xl p-4 text-white shadow-sm transition-transform hover:-translate-y-0.5", color)}>
+      <Icon size={26} aria-hidden="true" />
+      <span>
+        <span className="block text-sm font-semibold">{label}</span>
+        <span className="block text-xs text-white/85">{hint}</span>
+      </span>
+    </Link>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className="mt-0.5 text-sm font-medium">{value}</dd>
+    </div>
+  );
+}
+
 function Heading({ children }: { children: React.ReactNode }) {
   return <h2 className="mb-3 mt-8 text-lg font-semibold">{children}</h2>;
 }
@@ -88,10 +117,24 @@ export default async function HomePage() {
   const showHr = canManageRecords(me.role);
   const showSalary = canViewSalaries(me.role);
 
-  const [myLog, employeesRes, schedulesRes, logsRes, bioRes, salariesRes, leaveRes, pendingLeaveRes] = await Promise.all([
+  const month = monthOf(today);
+  const [myLog, profileRes, myBioRes, myLeaveRes, employeesRes, schedulesRes, logsRes, bioRes, salariesRes, leaveRes, pendingLeaveRes] = await Promise.all([
     me.employee
       ? supabase.from("attendance_logs").select("time_in, time_out, late_minutes")
           .eq("employee_id", me.employee.id).eq("work_date", today).maybeSingle()
+      : Promise.resolve({ data: null }),
+    me.employee
+      ? supabase.from("employees")
+          .select("employee_no, date_hired, departments(name), positions(title)")
+          .eq("id", me.employee.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    me.employee
+      ? supabase.from("employee_biodata").select("phone").eq("employee_id", me.employee.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    me.employee
+      ? supabase.from("leave_requests").select("start_date, end_date, status")
+          .eq("employee_id", me.employee.id).in("status", ["APPROVED", "PENDING"])
+          .lte("start_date", month.last).gte("end_date", month.first)
       : Promise.resolve({ data: null }),
     showDirectory
       ? supabase.from("employees")
@@ -182,30 +225,97 @@ export default async function HomePage() {
 
   const tile = "grid gap-4 sm:grid-cols-2 lg:grid-cols-4";
 
+  const profile = profileRes.data as unknown as {
+    employee_no: string; date_hired: string | null; positions: { title: string } | null; departments: { name: string } | null;
+  } | null;
+  const leaveRows = (myLeaveRes.data ?? []) as { start_date: string; end_date: string; status: string }[];
+  const leaveDays = (status: string) =>
+    leaveRows.filter((r) => r.status === status).flatMap((r) => expandRange(r.start_date, r.end_date));
+  const displayName = me.employee?.full_name ?? me.email ?? "User";
+  const when = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" }) : "—";
+
+  // Shortcuts: the most useful four for this role.
+  const shortcuts: { href: string; label: string; hint: string; Icon: LucideIcon }[] = [];
+  if (me.employee) shortcuts.push({ href: "/time-clock", label: "Time Clock", hint: "Time in / out", Icon: Clock });
+  if (me.employee) shortcuts.push({ href: "/leave", label: "Leave", hint: "File or track leave", Icon: Plane });
+  if (me.employee) shortcuts.push({ href: "/payslips", label: "Payslips", hint: "View your pay", Icon: Receipt });
+  if (showDirectory) shortcuts.push({ href: "/employees", label: "Employees", hint: "Directory", Icon: Users });
+  if (canManagePayroll(me.role)) shortcuts.push({ href: "/payroll", label: "Payroll", hint: "Pay runs", Icon: Banknote });
+  if (showTeam) shortcuts.push({ href: "/team-attendance", label: "Team Attendance", hint: "Who is in today", Icon: ClipboardList });
+  if (me.employee) shortcuts.push({ href: `/employees/${me.employee.id}`, label: "My Profile", hint: "Your records", Icon: User });
+  const tileColors = ["tile-orange", "tile-blue", "tile-sky", "tile-green"];
+
   return (
     <div className="max-w-6xl">
-      <h1 className="text-2xl font-semibold">Hello, {me.employee?.full_name ?? me.email}</h1>
-      <p className="mt-1 text-sm text-muted">{formatDate(today)}</p>
-
-      {!me.employee ? (
-        <div className="mt-6 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-          Your login isn&apos;t linked to an employee record yet, so you can&apos;t time in. Ask an admin or HR to link it.
-        </div>
-      ) : (
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4">
-          <div className="text-sm">
-            <p className="text-muted">Your day</p>
-            <p className="mt-1">
-              In <span className="font-medium">{formatTime(myLog.data?.time_in ?? null)}</span> · Out{" "}
-              <span className="font-medium">{formatTime(myLog.data?.time_out ?? null)}</span>
-              {myLog.data && myLog.data.late_minutes > 0 && <span className="ml-2 text-warning">Late {myLog.data.late_minutes} min</span>}
-            </p>
+      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <div className="min-w-0 space-y-6">
+          <div>
+            <h1 className="text-2xl font-semibold">Hello, {displayName}</h1>
+            <p className="mt-1 text-sm text-muted">{formatDate(today)}</p>
           </div>
-          <Link href="/time-clock" className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90">
-            Time Clock
-          </Link>
+
+          <section className="rounded-2xl border border-border bg-surface p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold">{me.employee ? "My Information" : "Account"}</h2>
+              <Link href="/settings" className="text-xs text-accent hover:underline">Edit info</Link>
+            </div>
+            <div className="mt-4 flex items-center gap-4">
+              <Avatar name={displayName} className="h-16 w-16 text-xl" />
+              <div className="min-w-0">
+                <p className="truncate text-lg font-semibold">{displayName}</p>
+                <p className="text-sm text-muted">{roleLabels[me.role]}</p>
+              </div>
+            </div>
+            <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {profile && <Fact label="Employee no." value={profile.employee_no} />}
+              {profile && <Fact label="Department" value={profile.departments?.name ?? "—"} />}
+              {profile && <Fact label="Position" value={profile.positions?.title ?? "—"} />}
+              <Fact label="Email" value={me.email ?? "—"} />
+              {profile && <Fact label="Phone" value={(myBioRes.data as { phone: string | null } | null)?.phone || "—"} />}
+              {profile?.date_hired && <Fact label="Member since" value={formatDate(profile.date_hired)} />}
+              <Fact label="Last login" value={when(me.lastSignInAt)} />
+            </dl>
+          </section>
+
+          {shortcuts.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {shortcuts.slice(0, 4).map((t, i) => (
+                <QuickTile key={t.href} {...t} color={tileColors[i]} />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        <aside className="space-y-6">
+          {!me.employee ? (
+            <div className="rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
+              Your login isn&apos;t linked to an employee record yet, so you can&apos;t time in. Ask an admin or HR to link it.
+            </div>
+          ) : (
+            <section className="rounded-2xl border border-border bg-surface p-4">
+              <h3 className="text-sm font-semibold">My day</h3>
+              <p className="mt-2 text-sm">
+                In <span className="font-medium">{formatTime(myLog.data?.time_in ?? null)}</span> · Out{" "}
+                <span className="font-medium">{formatTime(myLog.data?.time_out ?? null)}</span>
+              </p>
+              {myLog.data && myLog.data.late_minutes > 0 && (
+                <p className="mt-1 text-xs text-warning">Late {myLog.data.late_minutes} min</p>
+              )}
+              <Link href="/time-clock" className="mt-3 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90">
+                Time Clock
+              </Link>
+            </section>
+          )}
+          <MiniCalendar
+            year={month.year}
+            month={month.month}
+            today={today}
+            approved={leaveDays("APPROVED")}
+            pending={leaveDays("PENDING")}
+          />
+        </aside>
+      </div>
 
       {showTeam && (
         <>

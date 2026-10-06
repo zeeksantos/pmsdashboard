@@ -112,7 +112,7 @@ union all select 'leave types', count(*), 4 from leave_types;
 ## Part 1: Sign in and out (Owner)
 
 - [ ] Sign in as `YOU+owner@gmail.com`. **See:** the Home page saying "Hello, Olivia Owner", and a left menu.
-- [ ] Sign out (bottom of the menu). **See:** the sign-in page.
+- [ ] Click **Log out** (very bottom of the menu). **See:** the sign-in page.
 - [ ] Try a wrong password. **See:** an error, and you stay on the sign-in page.
 - [ ] While signed out, type `/employees` after the address. **See:** you are sent to the sign-in page.
 
@@ -122,7 +122,7 @@ Sign in as each person and check the **left menu shows exactly these items** (or
 
 | Sign in as | Menu items |
 |---|---|
-| Ella or Eli (employee) | Home, Time Clock, My Attendance, My Profile, My Account, Leave, My Payslips |
+| Ella or Eli (employee) | Dashboard, Time & Attendance, Leave, My Profile, My Payslips, Settings (theme and password) |
 | Marco (manager) | the employee items, plus **Leave Approvals, Employees, Org Chart, Team Attendance** |
 | Hannah (HR) | same as Marco |
 | Felix (finance) | the employee items, plus **Employees, Org Chart, Salaries, Payroll** (no Leave Approvals, no Team Attendance) |
@@ -212,7 +212,7 @@ but lateness isn't calculated, because nobody is scheduled.
 
 ## Part 6: Employee self-service (Ella)
 
-- [ ] Sign in as **Ella**, open **My Account**. Enter a phone number, address, city, province and an emergency
+- [ ] Sign in as **Ella**, open **Settings**. Enter a phone number, address, city, province and an emergency
       contact. Click **Save changes**. **See:** "Saved."
 - [ ] Reload. **See:** the values are still there.
 - [ ] Put `abc` in personal email and save. **See:** "That email address doesn't look right."
@@ -413,7 +413,7 @@ Clock-ins can't be back-dated in the app, so use a script.
 - [ ] Sign out. Try the **same code** again. **See:** "wrong or has expired."
 - [ ] Ask for a code for an email that doesn't exist. **See:** the **same** "we've emailed a code" message.
 - [ ] Try mismatched passwords, and a password of 5 characters. **See:** a clear error each time.
-- [ ] Sign in as Eli with the new password. Set it back via My Account if you want.
+- [ ] Sign in as Eli with the new password. Set it back via Settings if you want.
 
 ## Part 14: Phone check
 
@@ -465,7 +465,7 @@ Send me:
 
 ### Rolling out
 - [ ] For each real employee, create a login, add them in Employees (with schedule and salary), link the login,
-      and set the role. Ask them to change their password on first sign-in (My Account).
+      and set the role. Ask them to change their password on first sign-in (Settings).
 
 ### What the system doesn't do yet
 - **Overtime and holiday premiums**, and any holiday list. On a public holiday everyone scheduled will show as

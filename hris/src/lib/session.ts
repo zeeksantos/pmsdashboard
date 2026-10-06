@@ -5,6 +5,8 @@ import type { Role } from "@/lib/roles";
 export type CurrentUser = {
   userId: string;
   email: string | undefined;
+  lastSignInAt: string | null;
+  createdAt: string | null;
   role: Role;
   employee: { id: string; full_name: string; employee_no: string } | null;
 };
@@ -28,6 +30,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   return {
     userId: user.id,
     email: user.email,
+    lastSignInAt: user.last_sign_in_at ?? null,
+    createdAt: user.created_at ?? null,
     role: (roleRow?.role ?? "employee") as Role,
     employee,
   };

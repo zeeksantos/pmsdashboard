@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-sidebar px-4">
       <div className="fixed right-4 top-4">
         <ThemeToggle />
       </div>

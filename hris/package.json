@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --no-warnings tests/payroll.test.mts"
+    "test": "node --experimental-strip-types --no-warnings --test \"tests/*.test.mts\""
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
