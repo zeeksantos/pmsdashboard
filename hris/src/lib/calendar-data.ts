@@ -3,6 +3,7 @@ import type { CurrentUser } from "@/lib/session";
 import { canManageRecords, canViewDirectory, canViewTeamAttendance } from "@/lib/roles";
 import { expandRange, monthOf, yearlyDate, type CalendarEvent } from "@/lib/calendar";
 import { formatTime } from "@/lib/format";
+import { companyKindLabels, type CompanyEventKind } from "@/lib/company-events";
 
 type LeaveRow = { employee_id?: string; start_date: string; end_date: string; status: string; half_day: boolean; leave_types: { name: string } | null };
 
@@ -18,7 +19,7 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
   const empId = me.employee?.id;
   const events: CalendarEvent[] = [];
 
-  const [myLeave, teamLeave, myLogs, people, bios] = await Promise.all([
+  const [myLeave, teamLeave, myLogs, people, bios, company] = await Promise.all([
     empId
       ? supabase.from("leave_requests").select("start_date, end_date, status, half_day, leave_types(name)")
           .eq("employee_id", empId).in("status", ["APPROVED", "PENDING"]).lte("start_date", last).gte("end_date", first)
@@ -36,6 +37,7 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
           .in("status", ["ACTIVE", "ON_LEAVE"])
       : Promise.resolve({ data: null }),
     hr ? supabase.from("employee_biodata").select("employee_id, date_of_birth") : Promise.resolve({ data: null }),
+    supabase.from("company_events").select("title, kind, start_date, end_date, note").lte("start_date", last).gte("end_date", first),
   ]);
 
   const names = new Map<string, string>(
@@ -99,6 +101,19 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
     const date = yearlyDate(b.date_of_birth, year, month);
     const name = names.get(b.employee_id);
     if (date && name) events.push({ date, kind: "birthday", title: `${name}'s birthday`, href: `/employees/${b.employee_id}` });
+  }
+
+  for (const c of (company.data ?? []) as { title: string; kind: CompanyEventKind; start_date: string; end_date: string; note: string | null }[]) {
+    for (const date of expandRange(c.start_date, c.end_date)) {
+      if (date < first || date > last) continue;
+      events.push({
+        date,
+        kind: c.kind === "REGULAR_HOLIDAY" ? "holiday-regular" : c.kind === "SPECIAL_HOLIDAY" ? "holiday-special" : "company-event",
+        title: c.title,
+        detail: [companyKindLabels[c.kind], c.note].filter(Boolean).join(" · "),
+        href: "/company-calendar",
+      });
+    }
   }
 
   return events.sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind));

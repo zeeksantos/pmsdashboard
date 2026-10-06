@@ -55,7 +55,8 @@ export function yearlyDate(original: string, year: number, month: number): strin
 }
 
 export type CalendarEventKind =
-  | "leave" | "leave-pending" | "team-leave" | "attendance" | "birthday" | "anniversary" | "contract" | "regularization";
+  | "leave" | "leave-pending" | "team-leave" | "attendance" | "birthday" | "anniversary" | "contract" | "regularization"
+  | "holiday-regular" | "holiday-special" | "company-event";
 
 export type CalendarEvent = {
   date: string; // YYYY-MM-DD

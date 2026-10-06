@@ -431,6 +431,14 @@ Clock-ins can't be back-dated in the app, so use a script.
 - [ ] On the dashboard calendar click a day with a dot. **See:** what is on that day. Use the arrows to go to
       other months, and **Today** to come back.
 
+## Part 13c: Company calendar (HR)
+- [ ] Open **Company Calendar** in the menu. **See:** the Philippine holidays for the year, each marked **Regular
+      holiday** or **Special non-working holiday**.
+- [ ] As HR, Admin or Owner add an event: a title, a date, optional end date and note, then **Add**.
+      **See:** it in the list. As Marco or Ella you can see the list but not the form.
+- [ ] Open the **Dashboard**. Use the calendar arrows to find that month and click the day. **See:** your event.
+- [ ] Remove your test event with **Remove**. **See:** it disappears.
+
 ## Part 14: Phone check
 
 - [ ] Open the site on your phone (the Vercel address, not localhost). Sign in as **Ella**.
