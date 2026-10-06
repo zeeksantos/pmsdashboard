@@ -44,11 +44,17 @@ export default async function EmployeesPage({
   if (status) query = query.eq("status", status);
   if (type) query = query.eq("employment_type", type);
 
-  const [{ data }, { data: departments }] = await Promise.all([
+  // Login emails are shown to HR, admin and owner only.
+  const showLogin = canManageRecords(me.role);
+  const [{ data }, { data: departments }, loginRes] = await Promise.all([
     query,
     supabase.from("departments").select("id, name").order("name"),
+    showLogin ? supabase.rpc("employee_login_emails") : Promise.resolve({ data: null }),
   ]);
   const rows = (data ?? []) as unknown as Row[];
+  const loginEmail = new Map(
+    ((loginRes.data ?? []) as { employee_id: string; email: string }[]).map((l) => [l.employee_id, l.email])
+  );
 
   const field =
     "rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-sm text-foreground outline-none focus:border-accent";
@@ -90,6 +96,7 @@ export default async function EmployeesPage({
             <tr>
               <th className="px-4 py-3 font-medium">No.</th>
               <th className="px-4 py-3 font-medium">Name</th>
+              {showLogin && <th className="px-4 py-3 font-medium">Login email</th>}
               <th className="px-4 py-3 font-medium">Department</th>
               <th className="px-4 py-3 font-medium">Position</th>
               <th className="px-4 py-3 font-medium">Type</th>
@@ -103,6 +110,11 @@ export default async function EmployeesPage({
                 <td className="px-4 py-3">
                   <Link href={`/employees/${r.id}`} className="text-accent hover:underline">{r.full_name}</Link>
                 </td>
+                {showLogin && (
+                  <td className="px-4 py-3">
+                    {loginEmail.get(r.id) ?? <span className="text-muted">No login</span>}
+                  </td>
+                )}
                 <td className="px-4 py-3">{r.departments?.name ?? "—"}</td>
                 <td className="px-4 py-3">{r.positions?.title ?? "—"}</td>
                 <td className="px-4 py-3">{label(r.employment_type)}</td>
@@ -115,7 +127,7 @@ export default async function EmployeesPage({
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-muted">No employees found.</td>
+                <td colSpan={showLogin ? 7 : 6} className="px-4 py-6 text-center text-muted">No employees found.</td>
               </tr>
             )}
           </tbody>

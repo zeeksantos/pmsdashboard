@@ -178,7 +178,8 @@ but lateness isn't calculated, because nobody is scheduled.
 
 ## Part 5: Employee records (Hannah, HR)
 
-- [ ] Sign in as **Hannah**. Open **Employees**. **See:** all six test people.
+- [ ] Sign in as **Hannah**. Open **Employees**. **See:** all six test people. Hannah (HR) also sees a **Login email** column.
+- [ ] Sign in as **Marco** or **Felix** and open **Employees**. **See:** no Login email column.
 - [ ] Search "Ella". **See:** one row. Set the department filter to Marketing. **See:** Marco, Ella, Eli.
 - [ ] Click **Add employee**. **See:** the **Sign-in login** section at the top (Admin, Owner and HR; HR can give Employee, Manager
       or HR access only) and a suggested employee number. As Owner fill the login too (email, **Generate**, Employee). Fill in name "Test Newhire",
