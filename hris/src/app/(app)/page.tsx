@@ -301,7 +301,7 @@ export default async function HomePage() {
               </Link>
             </section>
           )}
-          <CalendarPanel year={month.year} month={month.month} today={today} events={calendarEvents} />
+          <CalendarPanel year={month.year} month={month.month} today={today} events={calendarEvents} canAdd={showHr} />
         </aside>
       </div>
 
