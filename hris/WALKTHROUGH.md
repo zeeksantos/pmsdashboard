@@ -424,6 +424,9 @@ Clock-ins can't be back-dated in the app, so use a script.
 - [ ] Click **Set a new password** on that user, generate one, **Set password**. **See:** "Password changed."
 - [ ] Try changing **your own** access level. **See:** the Save button is off for yourself.
 - [ ] Open the **Audit Log**. **See:** entries for the new login and the role change.
+- [ ] Open **Employees → Add employee**. Fill in the required fields, tick **Create a login so this person can sign in**,
+      click **Generate**, pick an access level, then **Add employee**. **See:** the employee page, and the person
+      appears under **People → Users** linked to that employee. Sign in as them to confirm.
 - [ ] On the dashboard calendar click a day with a dot. **See:** what is on that day. Use the arrows to go to
       other months, and **Today** to come back.
 

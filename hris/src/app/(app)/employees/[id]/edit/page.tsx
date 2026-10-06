@@ -9,8 +9,15 @@ import type { EmployeeFormValues } from "@/lib/employees";
 
 const s = (v: unknown) => (v == null ? "" : String(v));
 
-export default async function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditEmployeePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ loginError?: string }>;
+}) {
   const { id } = await params;
+  const { loginError } = await searchParams;
   const me = await getCurrentUser();
   if (!me || !canManageRecords(me.role)) notFound();
 
@@ -71,6 +78,11 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold">Edit {emp.full_name}</h1>
+      {loginError && (
+        <p className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
+          The employee was saved, but the login could not be created: {loginError}. You can create it on the Users page.
+        </p>
+      )}
       <LoginAccess
         employeeId={id}
         linked={Boolean(emp.user_id)}

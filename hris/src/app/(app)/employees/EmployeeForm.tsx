@@ -13,6 +13,8 @@ import {
   weekdays,
   type EmployeeFormValues,
 } from "@/lib/employees";
+import { allRoles, roleLabels } from "@/lib/roles";
+import { generatePassword } from "@/lib/password";
 
 const input =
   "w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
@@ -40,14 +42,20 @@ export function EmployeeForm({
   departments,
   positionTitles,
   managers,
+  canCreateLogin = false,
+  isOwner = false,
 }: {
   values: EmployeeFormValues;
   departments: { id: string; name: string }[];
   positionTitles: string[];
   managers: { id: string; full_name: string }[];
+  canCreateLogin?: boolean;
+  isOwner?: boolean;
 }) {
   const [error, formAction, pending] = useActionState(saveEmployee, null);
   const [employmentType, setEmploymentType] = useState(values.employment_type);
+  const [createLogin, setCreateLogin] = useState(false);
+  const [loginPassword, setLoginPassword] = useState("");
   const v = values;
 
   return (
@@ -207,6 +215,44 @@ export function EmployeeForm({
           <input name="form_date" type="date" defaultValue={v.form_date} className={input} />
         </Field>
       </Section>
+
+      {canCreateLogin && !v.id && (
+        <Section title="Sign-in login (optional)">
+          <label className="col-span-full flex items-center gap-2 text-sm">
+            <input type="checkbox" name="create_login" checked={createLogin} onChange={(e) => setCreateLogin(e.target.checked)} />
+            Create a login so this person can sign in
+          </label>
+          {createLogin && (
+            <>
+              <Field name="Login email (blank = use work email)">
+                <input name="login_email" type="email" autoComplete="off" className={input} />
+              </Field>
+              <Field name="Temporary password (min. 8 characters)">
+                <div className="flex gap-2">
+                  <input
+                    name="login_password" type="text" required minLength={8} autoComplete="off"
+                    value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className={input}
+                  />
+                  <button type="button" onClick={() => setLoginPassword(generatePassword())}
+                    className="shrink-0 rounded-lg bg-surface-raised px-3 py-2 text-sm hover:bg-border">
+                    Generate
+                  </button>
+                </div>
+              </Field>
+              <Field name="Access level">
+                <select name="login_role" defaultValue="employee" className={input}>
+                  {allRoles.filter((r) => isOwner || r !== "owner").map((r) => (
+                    <option key={r} value={r}>{roleLabels[r]}</option>
+                  ))}
+                </select>
+              </Field>
+              <p className="col-span-full text-xs text-muted">
+                Share the email and password with them privately. They can change the password under Settings.
+              </p>
+            </>
+          )}
+        </Section>
+      )}
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
