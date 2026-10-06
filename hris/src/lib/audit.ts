@@ -14,6 +14,7 @@ export const resourceLabels: Record<string, string> = {
   payroll_runs: "Payroll run",
   payslips: "Payslip",
   payslip_lines: "Payslip line",
+  logins: "Login",
 };
 
 export type AuditRow = {

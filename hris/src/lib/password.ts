@@ -17,3 +17,17 @@ export function normalizeCode(raw: string): string | null {
   const code = raw.replace(/\s+/g, "");
   return /^\d{6,10}$/.test(code) ? code : null;
 }
+
+// A readable temporary password: no look-alike characters (0/O, 1/l/I), at least one of each kind.
+export function generatePassword(length = 12): string {
+  const sets = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789"];
+  const all = sets.join("");
+  const pick = (chars: string) => chars[crypto.getRandomValues(new Uint32Array(1))[0] % chars.length];
+  const out = sets.map(pick);
+  while (out.length < length) out.push(pick(all));
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out.join("");
+}

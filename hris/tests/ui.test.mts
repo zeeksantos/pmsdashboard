@@ -59,3 +59,31 @@ test("single-item groups become plain links; empty groups disappear", () => {
   assert.deepEqual(out[2], { label: "My Leave", icon: "plane", href: "/leave" });
   assert.deepEqual(allHrefs(out), ["/", "/time-clock", "/attendance", "/leave"]);
 });
+
+import { shiftMonth, yearlyDate } from "../src/lib/calendar.ts";
+import { generatePassword } from "../src/lib/password.ts";
+
+test("shiftMonth crosses year boundaries both ways", () => {
+  assert.deepEqual(shiftMonth(2026, 12, 1), { year: 2027, month: 1 });
+  assert.deepEqual(shiftMonth(2026, 1, -1), { year: 2025, month: 12 });
+  assert.deepEqual(shiftMonth(2026, 6, 0), { year: 2026, month: 6 });
+  assert.deepEqual(shiftMonth(2026, 3, -15), { year: 2024, month: 12 });
+});
+
+test("yearlyDate puts birthdays in the viewed year and handles Feb 29", () => {
+  assert.equal(yearlyDate("1995-10-18", 2026, 10), "2026-10-18");
+  assert.equal(yearlyDate("1995-10-18", 2026, 11), null);
+  assert.equal(yearlyDate("2000-02-29", 2026, 2), "2026-02-28");
+  assert.equal(yearlyDate("2000-02-29", 2028, 2), "2028-02-29");
+});
+
+test("generatePassword is long enough, mixed, and avoids look-alike characters", () => {
+  for (let i = 0; i < 50; i++) {
+    const p = generatePassword();
+    assert.equal(p.length, 12);
+    assert.match(p, /[A-Z]/);
+    assert.match(p, /[a-z]/);
+    assert.match(p, /[0-9]/);
+    assert.doesNotMatch(p, /[0O1lI]/);
+  }
+});
