@@ -180,7 +180,8 @@ but lateness isn't calculated, because nobody is scheduled.
 
 - [ ] Sign in as **Hannah**. Open **Employees**. **See:** all six test people.
 - [ ] Search "Ella". **See:** one row. Set the department filter to Marketing. **See:** Marco, Ella, Eli.
-- [ ] Click **Add employee**. **See:** a suggested employee number. Fill in name "Test Newhire",
+- [ ] Click **Add employee**. **See:** the **Sign-in login** section at the top (only for Admin and Owner; HR do not
+      see it) and a suggested employee number. As Owner fill the login too (email, **Generate**, Employee). Fill in name "Test Newhire",
       department HR, position "Recruiter" (a new title is fine), **Reports to** Hannah, type **Contractual**,
       date hired today. **See:** a "Contract end date" box appears. Set it to 10 days from now.
 - [ ] Fill in the biodata fields (birthdate, phone, address, emergency contact, SSS and so on) and set the
@@ -424,8 +425,7 @@ Clock-ins can't be back-dated in the app, so use a script.
 - [ ] Click **Set a new password** on that user, generate one, **Set password**. **See:** "Password changed."
 - [ ] Try changing **your own** access level. **See:** the Save button is off for yourself.
 - [ ] Open the **Audit Log**. **See:** entries for the new login and the role change.
-- [ ] Open **Employees → Add employee**. Fill in the required fields, tick **Create a login so this person can sign in**,
-      click **Generate**, pick an access level, then **Add employee**. **See:** the employee page, and the person
+- [ ] Open **Employees → Add employee**. Fill in the required fields, fill in the **Sign-in login** section at the top (email, password, access level; click **Generate** for a password), pick an access level, then **Add employee**. **See:** the employee page, and the person
       appears under **People → Users** linked to that employee. Sign in as them to confirm.
 - [ ] On the dashboard calendar click a day with a dot. **See:** what is on that day. Use the arrows to go to
       other months, and **Today** to come back.
