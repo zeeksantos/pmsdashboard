@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { monthGrid, monthTitle, shiftMonth, type CalendarEvent, type CalendarEventKind } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { loadMonthEvents } from "@/app/(app)/calendar-actions";
+import { AddEventForm } from "@/app/(app)/company-calendar/AddEventForm";
 
 const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -32,12 +33,14 @@ function longDate(date: string) {
 }
 
 export function CalendarPanel({
-  year, month, today, events,
-}: { year: number; month: number; today: string; events: CalendarEvent[] }) {
+  year, month, today, events, canAdd = false,
+}: { year: number; month: number; today: string; events: CalendarEvent[]; canAdd?: boolean }) {
   const [view, setView] = useState({ year, month });
   const [cache, setCache] = useState<Record<string, CalendarEvent[]>>({ [key(year, month)]: events });
   const [selected, setSelected] = useState<string | null>(today);
   const [failed, setFailed] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, startLoading] = useTransition();
 
   function go(next: { year: number; month: number }) {
@@ -50,6 +53,23 @@ export function CalendarPanel({
       try {
         const loaded = await loadMonthEvents(next.year, next.month);
         setCache((c) => ({ ...c, [k]: loaded }));
+      } catch {
+        setFailed(true);
+      }
+    });
+  }
+
+  // After an event is added, forget every cached month (the new event may fall in any of them)
+  // and load the month on screen again.
+  function afterAdd() {
+    setAdding(false);
+    setNotice("Added to the calendar.");
+    setCache({});
+    const { year: y, month: m } = view;
+    startLoading(async () => {
+      try {
+        const loaded = await loadMonthEvents(y, m);
+        setCache({ [key(y, m)]: loaded });
       } catch {
         setFailed(true);
       }
@@ -80,6 +100,24 @@ export function CalendarPanel({
           </button>
         </div>
       </div>
+
+      {canAdd && (
+        <div className="mt-3">
+          <button
+            type="button" aria-expanded={adding}
+            onClick={() => { setAdding((v) => !v); setNotice(null); }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:bg-accent/90"
+          >
+            <Plus size={14} aria-hidden="true" /> Add event
+          </button>
+          {adding && (
+            <div className="mt-3 rounded-xl border border-border bg-surface-raised p-3">
+              <AddEventForm key={selected ?? today} today={selected ?? today} compact onAdded={afterAdd} />
+            </div>
+          )}
+          {notice && !adding && <p className="mt-2 text-xs text-success">{notice}</p>}
+        </div>
+      )}
 
       <div className={cn("mt-3 grid grid-cols-7 gap-y-1 text-center text-xs", loading && "opacity-60")}>
         {weekdays.map((d, i) => (<span key={i} className="pb-1 text-muted">{d}</span>))}
@@ -134,6 +172,9 @@ export function CalendarPanel({
           <p className="text-sm text-muted">Pick a day to see what&apos;s on.</p>
         )}
       </div>
+      <p className="mt-3 text-xs">
+        <Link href="/company-calendar" className="text-accent hover:underline">All holidays and events</Link>
+      </p>
     </section>
   );
 }

@@ -437,10 +437,12 @@ Clock-ins can't be back-dated in the app, so use a script.
       other months, and **Today** to come back.
 
 ## Part 13c: Company calendar (HR)
-- [ ] Open **Company Calendar** in the menu. **See:** the Philippine holidays for the year, each marked **Regular
+- [ ] Open **Time & Attendance → Company Calendar** in the menu (it is no longer a separate menu item). **See:** the Philippine holidays for the year, each marked **Regular
       holiday** or **Special non-working holiday**.
 - [ ] As HR, Admin or Owner add an event: a title, a date, optional end date and note, then **Add**.
       **See:** it in the list. As Marco or Ella you can see the list but not the form.
+- [ ] On the **Dashboard** calendar, as HR, Admin or Owner, click **Add event**, fill it in and click **Add**. **See:** the form
+      closes and the day shows a dot; click the day to see your event. Marco and Ella do not see the button.
 - [ ] Open the **Dashboard**. Use the calendar arrows to find that month and click the day. **See:** your event.
 - [ ] Remove your test event with **Remove**. **See:** it disappears.
 

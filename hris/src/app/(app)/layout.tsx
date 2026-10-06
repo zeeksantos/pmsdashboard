@@ -17,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/attendance", label: "My Attendance" },
   ];
   if (canViewTeamAttendance(me.role)) time.push({ href: "/team-attendance", label: "Team Attendance" });
+  time.push({ href: "/company-calendar", label: "Company Calendar" });
 
   const leave: NavLink[] = [];
   if (me.employee) leave.push({ href: "/leave", label: "My Leave" });
@@ -37,7 +38,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const groups: NavGroup[] = [
     { label: "Dashboard", icon: "dashboard", href: "/" },
-    { label: "Company Calendar", icon: "calendar", href: "/company-calendar" },
     { label: "Time & Attendance", icon: "clock", items: time },
     { label: "Leave", icon: "plane", items: leave },
     { label: "People", icon: "users", items: people },
