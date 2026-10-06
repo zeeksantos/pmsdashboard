@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
-import { canManageRecords } from "@/lib/roles";
+import { allRoles, canManageRecords, canManageUsers } from "@/lib/roles";
 
 const text = (fd: FormData, k: string) => {
   const v = String(fd.get(k) ?? "").trim();
@@ -31,6 +31,19 @@ export async function saveEmployee(
   const end = text(fd, "end_time");
   if ((start && !end) || (!start && end)) return "Enter both shift start and end, or leave both blank.";
   if (start && end && end <= start) return "Shift end must be after shift start.";
+
+  // Optional login, created together with a NEW employee (admin/owner only).
+  const wantsLogin = !id && fd.get("create_login") === "on";
+  const loginEmail = (text(fd, "login_email") ?? text(fd, "work_email") ?? "").toLowerCase();
+  const loginPassword = String(fd.get("login_password") ?? "");
+  const loginRole = text(fd, "login_role") ?? "employee";
+  if (wantsLogin) {
+    if (!canManageUsers(me.role)) return "Only an admin or owner can create logins.";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(loginEmail)) return "Enter a valid email for the login.";
+    if (loginPassword.length < 8) return "The login password must be at least 8 characters.";
+    if (!(allRoles as string[]).includes(loginRole)) return "Choose an access level for the login.";
+    if (loginRole === "owner" && me.role !== "owner") return "Only an owner can create an owner.";
+  }
 
   const supabase = await createClient();
 
@@ -131,6 +144,20 @@ export async function saveEmployee(
           end_time: end,
         });
     if (error) return error.message;
+  }
+
+  if (wantsLogin) {
+    const { error } = await supabase.rpc("admin_create_user", {
+      p_email: loginEmail,
+      p_password: loginPassword,
+      p_role: loginRole,
+      p_employee: employeeId,
+    });
+    revalidatePath("/employees");
+    revalidatePath("/org-chart");
+    // The employee is already saved, so send them to the edit page with the reason.
+    if (error) redirect(`/employees/${employeeId}/edit?loginError=${encodeURIComponent(error.message)}`);
+    revalidatePath("/users");
   }
 
   revalidatePath("/employees");
