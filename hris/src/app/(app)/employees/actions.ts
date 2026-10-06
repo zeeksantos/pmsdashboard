@@ -32,14 +32,13 @@ export async function saveEmployee(
   if ((start && !end) || (!start && end)) return "Enter both shift start and end, or leave both blank.";
   if (start && end && end <= start) return "Shift end must be after shift start.";
 
-  // Optional login, created together with a NEW employee (admin/owner only).
-  const wantsLogin = !id && fd.get("create_login") === "on";
-  const loginEmail = (text(fd, "login_email") ?? text(fd, "work_email") ?? "").toLowerCase();
+  // A new employee gets a sign-in login at the same time (admin/owner only; HR adds the record only).
+  const wantsLogin = !id && canManageUsers(me.role);
+  const loginEmail = (text(fd, "login_email") ?? "").toLowerCase();
   const loginPassword = String(fd.get("login_password") ?? "");
   const loginRole = text(fd, "login_role") ?? "employee";
   if (wantsLogin) {
-    if (!canManageUsers(me.role)) return "Only an admin or owner can create logins.";
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(loginEmail)) return "Enter a valid email for the login.";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(loginEmail)) return "Enter a valid login email.";
     if (loginPassword.length < 8) return "The login password must be at least 8 characters.";
     if (!(allRoles as string[]).includes(loginRole)) return "Choose an access level for the login.";
     if (loginRole === "owner" && me.role !== "owner") return "Only an owner can create an owner.";
