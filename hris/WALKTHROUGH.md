@@ -168,6 +168,11 @@ but lateness isn't calculated, because nobody is scheduled.
 15 minutes **before** now. Time in as Ella: **See:** not late. Change the start to 30 minutes before now
 (delete today's row first, or use a different day): **See:** "Late by 30 min".
 
+**Field / out of office:** as Ella, before timing in choose **Field / out of office**. **See:** a **Where and why?**
+box. Click **Time In** with it empty. **See:** "Say where you are working and why." Type a reason and time in.
+**See:** a "Field / out of office" tag with your note. Open **My Attendance**. **See:** a Field tag in the **Where**
+column. As Marco open **Team Attendance**. **See:** the same tag and note, and the map link for the location.
+
 ## Part 4: Team attendance (Marco, Hannah, Olivia)
 
 - [ ] Sign in as **Marco**. Open **Team Attendance**. **See:** today's date and a row each for Ella and Eli

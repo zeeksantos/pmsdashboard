@@ -29,7 +29,7 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
           .eq("status", "APPROVED").lte("start_date", last).gte("end_date", first)
       : Promise.resolve({ data: null }),
     empId
-      ? supabase.from("attendance_logs").select("work_date, time_in, time_out, late_minutes")
+      ? supabase.from("attendance_logs").select("work_date, time_in, time_out, late_minutes, work_mode, field_note")
           .eq("employee_id", empId).gte("work_date", first).lte("work_date", last)
       : Promise.resolve({ data: null }),
     directory
@@ -72,12 +72,12 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
     }
   }
 
-  for (const l of (myLogs.data ?? []) as { work_date: string; time_in: string | null; time_out: string | null; late_minutes: number }[]) {
+  for (const l of (myLogs.data ?? []) as { work_date: string; time_in: string | null; time_out: string | null; late_minutes: number; work_mode: string; field_note: string | null }[]) {
     events.push({
       date: l.work_date,
       kind: "attendance",
       title: `In ${formatTime(l.time_in)} · Out ${formatTime(l.time_out)}`,
-      detail: l.late_minutes > 0 ? `Late ${l.late_minutes} min` : undefined,
+      detail: [l.work_mode === "FIELD" ? `Field: ${l.field_note ?? "out of office"}` : null, l.late_minutes > 0 ? `Late ${l.late_minutes} min` : null].filter(Boolean).join(" · ") || undefined,
       href: "/attendance",
     });
   }

@@ -14,6 +14,8 @@ type Row = {
   out_lng: number | null;
   late_minutes: number;
   undertime_minutes: number;
+  work_mode: string;
+  field_note: string | null;
   employees: { full_name: string } | null;
 };
 
@@ -42,7 +44,7 @@ export default async function TeamAttendancePage({
   const { data } = await supabase
     .from("attendance_logs")
     .select(
-      "id, time_in, time_out, in_lat, in_lng, out_lat, out_lng, late_minutes, undertime_minutes, employees(full_name)"
+      "id, time_in, time_out, in_lat, in_lng, out_lat, out_lng, late_minutes, undertime_minutes, work_mode, field_note, employees(full_name)"
     )
     .eq("work_date", day)
     .order("time_in", { ascending: true });
@@ -69,6 +71,7 @@ export default async function TeamAttendancePage({
           <thead className="border-b border-border text-muted">
             <tr>
               <th className="px-4 py-3 font-medium">Employee</th>
+              <th className="px-4 py-3 font-medium">Where</th>
               <th className="px-4 py-3 font-medium">In</th>
               <th className="px-4 py-3 font-medium">In location</th>
               <th className="px-4 py-3 font-medium">Out</th>
@@ -81,6 +84,16 @@ export default async function TeamAttendancePage({
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3">{r.employees?.full_name ?? "—"}</td>
+                <td className="px-4 py-3">
+                  {r.work_mode === "FIELD" ? (
+                    <span>
+                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs text-accent">Field</span>
+                      {r.field_note && <span className="mt-1 block text-xs text-muted">{r.field_note}</span>}
+                    </span>
+                  ) : (
+                    <span className="text-muted">Office</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">{formatTime(r.time_in)}</td>
                 <td className="px-4 py-3"><MapLink lat={r.in_lat} lng={r.in_lng} /></td>
                 <td className="px-4 py-3">{formatTime(r.time_out)}</td>
@@ -91,7 +104,7 @@ export default async function TeamAttendancePage({
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted">
+                <td colSpan={8} className="px-4 py-6 text-center text-muted">
                   No attendance for this date.
                 </td>
               </tr>
