@@ -87,3 +87,14 @@ test("generatePassword is long enough, mixed, and avoids look-alike characters",
     assert.doesNotMatch(p, /[0O1lI]/);
   }
 });
+
+import { canCreateLogins, loginRolesFor } from "../src/lib/roles.ts";
+
+test("who can hand out which login access levels", () => {
+  assert.deepEqual(loginRolesFor("hr"), ["employee", "manager", "hr"]);
+  assert.equal(loginRolesFor("admin").includes("owner"), false);
+  assert.equal(loginRolesFor("admin").includes("admin"), true);
+  assert.equal(loginRolesFor("owner").includes("owner"), true);
+  for (const r of ["employee", "manager", "finance"] as const) assert.equal(canCreateLogins(r), false);
+  assert.equal(canCreateLogins("hr"), true);
+});

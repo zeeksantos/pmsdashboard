@@ -13,7 +13,7 @@ import {
   weekdays,
   type EmployeeFormValues,
 } from "@/lib/employees";
-import { allRoles, roleLabels } from "@/lib/roles";
+import { roleLabels, type Role } from "@/lib/roles";
 import { generatePassword } from "@/lib/password";
 
 const input =
@@ -42,15 +42,13 @@ export function EmployeeForm({
   departments,
   positionTitles,
   managers,
-  canCreateLogin = false,
-  isOwner = false,
+  loginRoles = [],
 }: {
   values: EmployeeFormValues;
   departments: { id: string; name: string }[];
   positionTitles: string[];
   managers: { id: string; full_name: string }[];
-  canCreateLogin?: boolean;
-  isOwner?: boolean;
+  loginRoles?: Role[];
 }) {
   const [error, formAction, pending] = useActionState(saveEmployee, null);
   const [employmentType, setEmploymentType] = useState(values.employment_type);
@@ -61,7 +59,7 @@ export function EmployeeForm({
     <form action={formAction} className="flex max-w-4xl flex-col gap-6">
       {v.id && <input type="hidden" name="id" value={v.id} />}
 
-      {canCreateLogin && !v.id && (
+      {loginRoles.length > 0 && !v.id && (
         <Section title="Sign-in login">
           <Field name="Login email *">
             <input name="login_email" type="email" required autoComplete="off" className={input} />
@@ -80,7 +78,7 @@ export function EmployeeForm({
           </Field>
           <Field name="Access level *">
             <select name="login_role" defaultValue="employee" className={input}>
-              {allRoles.filter((r) => isOwner || r !== "owner").map((r) => (
+              {loginRoles.map((r) => (
                 <option key={r} value={r}>{roleLabels[r]}</option>
               ))}
             </select>
