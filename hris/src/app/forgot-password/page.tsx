@@ -1,5 +1,6 @@
 import { isSupabaseConfigured } from "@/lib/env";
 import { ForgotPasswordFlow } from "./ForgotPasswordFlow";
+import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function ForgotPasswordPage() {
@@ -9,7 +10,8 @@ export default function ForgotPasswordPage() {
         <ThemeToggle />
       </div>
       <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-lg">
-        <h1 className="text-xl font-semibold text-foreground">Reset your password</h1>
+        <Logo size={56} className="border border-border" />
+        <h1 className="mt-4 text-xl font-semibold text-foreground">Reset your password</h1>
         <p className="mt-1 text-sm text-muted">We&apos;ll email you a one-time code.</p>
 
         {isSupabaseConfigured ? (

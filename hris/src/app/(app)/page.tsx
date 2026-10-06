@@ -244,7 +244,7 @@ export default async function HomePage() {
   if (canManagePayroll(me.role)) shortcuts.push({ href: "/payroll", label: "Payroll", hint: "Pay runs", Icon: Banknote });
   if (showTeam) shortcuts.push({ href: "/team-attendance", label: "Team Attendance", hint: "Who is in today", Icon: ClipboardList });
   if (me.employee) shortcuts.push({ href: `/employees/${me.employee.id}`, label: "My Profile", hint: "Your records", Icon: User });
-  const tileColors = ["tile-orange", "tile-blue", "tile-sky", "tile-green"];
+  const tileColors = ["tile-red", "tile-orange", "tile-amber", "tile-crimson"];
 
   return (
     <div className="max-w-6xl">
