@@ -37,6 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const groups: NavGroup[] = [
     { label: "Dashboard", icon: "dashboard", href: "/" },
+    { label: "Company Calendar", icon: "calendar", href: "/company-calendar" },
     { label: "Time & Attendance", icon: "clock", items: time },
     { label: "Leave", icon: "plane", items: leave },
     { label: "People", icon: "users", items: people },

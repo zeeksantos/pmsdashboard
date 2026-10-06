@@ -3,6 +3,7 @@ import type { CurrentUser } from "@/lib/session";
 import { canManageRecords, canViewDirectory, canViewTeamAttendance } from "@/lib/roles";
 import { expandRange, monthOf, yearlyDate, type CalendarEvent } from "@/lib/calendar";
 import { formatTime } from "@/lib/format";
+import { companyKindLabels, type CompanyEventKind } from "@/lib/company-events";
 
 type LeaveRow = { employee_id?: string; start_date: string; end_date: string; status: string; half_day: boolean; leave_types: { name: string } | null };
 
@@ -18,7 +19,7 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
   const empId = me.employee?.id;
   const events: CalendarEvent[] = [];
 
-  const [myLeave, teamLeave, myLogs, people, bios] = await Promise.all([
+  const [myLeave, teamLeave, myLogs, people, bios, company] = await Promise.all([
     empId
       ? supabase.from("leave_requests").select("start_date, end_date, status, half_day, leave_types(name)")
           .eq("employee_id", empId).in("status", ["APPROVED", "PENDING"]).lte("start_date", last).gte("end_date", first)
@@ -28,7 +29,7 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
           .eq("status", "APPROVED").lte("start_date", last).gte("end_date", first)
       : Promise.resolve({ data: null }),
     empId
-      ? supabase.from("attendance_logs").select("work_date, time_in, time_out, late_minutes")
+      ? supabase.from("attendance_logs").select("work_date, time_in, time_out, late_minutes, work_mode, field_note")
           .eq("employee_id", empId).gte("work_date", first).lte("work_date", last)
       : Promise.resolve({ data: null }),
     directory
@@ -36,6 +37,7 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
           .in("status", ["ACTIVE", "ON_LEAVE"])
       : Promise.resolve({ data: null }),
     hr ? supabase.from("employee_biodata").select("employee_id, date_of_birth") : Promise.resolve({ data: null }),
+    supabase.from("company_events").select("title, kind, start_date, end_date, note").lte("start_date", last).gte("end_date", first),
   ]);
 
   const names = new Map<string, string>(
@@ -70,12 +72,12 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
     }
   }
 
-  for (const l of (myLogs.data ?? []) as { work_date: string; time_in: string | null; time_out: string | null; late_minutes: number }[]) {
+  for (const l of (myLogs.data ?? []) as { work_date: string; time_in: string | null; time_out: string | null; late_minutes: number; work_mode: string; field_note: string | null }[]) {
     events.push({
       date: l.work_date,
       kind: "attendance",
       title: `In ${formatTime(l.time_in)} · Out ${formatTime(l.time_out)}`,
-      detail: l.late_minutes > 0 ? `Late ${l.late_minutes} min` : undefined,
+      detail: [l.work_mode === "FIELD" ? `Field: ${l.field_note ?? "out of office"}` : null, l.late_minutes > 0 ? `Late ${l.late_minutes} min` : null].filter(Boolean).join(" · ") || undefined,
       href: "/attendance",
     });
   }
@@ -99,6 +101,19 @@ export async function loadCalendarEvents(me: CurrentUser, year: number, month: n
     const date = yearlyDate(b.date_of_birth, year, month);
     const name = names.get(b.employee_id);
     if (date && name) events.push({ date, kind: "birthday", title: `${name}'s birthday`, href: `/employees/${b.employee_id}` });
+  }
+
+  for (const c of (company.data ?? []) as { title: string; kind: CompanyEventKind; start_date: string; end_date: string; note: string | null }[]) {
+    for (const date of expandRange(c.start_date, c.end_date)) {
+      if (date < first || date > last) continue;
+      events.push({
+        date,
+        kind: c.kind === "REGULAR_HOLIDAY" ? "holiday-regular" : c.kind === "SPECIAL_HOLIDAY" ? "holiday-special" : "company-event",
+        title: c.title,
+        detail: [companyKindLabels[c.kind], c.note].filter(Boolean).join(" · "),
+        href: "/company-calendar",
+      });
+    }
   }
 
   return events.sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind));

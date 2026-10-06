@@ -1,4 +1,4 @@
-export type NavIcon = "dashboard" | "clock" | "plane" | "users" | "user" | "receipt" | "banknote" | "shield";
+export type NavIcon = "dashboard" | "calendar" | "clock" | "plane" | "users" | "user" | "receipt" | "banknote" | "shield";
 
 export type NavLink = { href: string; label: string };
 

@@ -98,3 +98,17 @@ test("who can hand out which login access levels", () => {
   for (const r of ["employee", "manager", "finance"] as const) assert.equal(canCreateLogins(r), false);
   assert.equal(canCreateLogins("hr"), true);
 });
+
+import { validateCompanyEvent } from "../src/lib/company-events.ts";
+
+test("company event validation", () => {
+  const ok = { title: "Outing", kind: "EVENT", start: "2026-11-05", end: "", note: "" };
+  assert.equal(validateCompanyEvent(ok), null);
+  assert.equal(validateCompanyEvent({ ...ok, end: "2026-11-07" }), null);
+  assert.match(validateCompanyEvent({ ...ok, title: "  " })!, /title/i);
+  assert.match(validateCompanyEvent({ ...ok, kind: "PARTY" })!, /type/i);
+  assert.match(validateCompanyEvent({ ...ok, start: "" })!, /start date/i);
+  assert.match(validateCompanyEvent({ ...ok, start: "2026-13-45" })!, /start date/i);
+  assert.match(validateCompanyEvent({ ...ok, end: "2026-11-01" })!, /before/i);
+  assert.match(validateCompanyEvent({ ...ok, note: "x".repeat(501) })!, /too long/i);
+});

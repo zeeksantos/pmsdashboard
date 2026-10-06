@@ -7,12 +7,12 @@ export default async function TimeClockPage() {
   const me = await getCurrentUser();
   const today = manilaToday();
 
-  let log: { time_in: string | null; time_out: string | null; late_minutes: number } | null = null;
+  let log: { time_in: string | null; time_out: string | null; late_minutes: number; work_mode: string; field_note: string | null } | null = null;
   if (me?.employee) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("attendance_logs")
-      .select("time_in, time_out, late_minutes")
+      .select("time_in, time_out, late_minutes, work_mode, field_note")
       .eq("employee_id", me.employee.id)
       .eq("work_date", today)
       .maybeSingle();

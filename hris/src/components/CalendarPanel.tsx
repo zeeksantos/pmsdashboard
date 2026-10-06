@@ -18,6 +18,9 @@ const dot: Record<CalendarEventKind, string> = {
   anniversary: "bg-accent",
   contract: "bg-danger",
   regularization: "bg-warning",
+  "holiday-regular": "bg-danger",
+  "holiday-special": "bg-warning",
+  "company-event": "bg-foreground",
 };
 
 const key = (y: number, m: number) => `${y}-${String(m).padStart(2, "0")}`;

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Banknote, ChevronDown, Clock, LayoutDashboard, LogOut, Menu, Plane, Receipt, Settings, Shield, User, Users, X,
+  Banknote, CalendarDays, ChevronDown, Clock, LayoutDashboard, LogOut, Menu, Plane, Receipt, Settings, Shield, User, Users, X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { activeHref, allHrefs, type NavGroup, type NavIcon } from "@/lib/nav";
@@ -13,6 +13,7 @@ import { Logo } from "@/components/Logo";
 
 const icons: Record<NavIcon, typeof Clock> = {
   dashboard: LayoutDashboard,
+  calendar: CalendarDays,
   clock: Clock,
   plane: Plane,
   users: Users,

@@ -168,6 +168,11 @@ but lateness isn't calculated, because nobody is scheduled.
 15 minutes **before** now. Time in as Ella: **See:** not late. Change the start to 30 minutes before now
 (delete today's row first, or use a different day): **See:** "Late by 30 min".
 
+**Field / out of office:** as Ella, before timing in choose **Field / out of office**. **See:** a **Where and why?**
+box. Click **Time In** with it empty. **See:** "Say where you are working and why." Type a reason and time in.
+**See:** a "Field / out of office" tag with your note. Open **My Attendance**. **See:** a Field tag in the **Where**
+column. As Marco open **Team Attendance**. **See:** the same tag and note, and the map link for the location.
+
 ## Part 4: Team attendance (Marco, Hannah, Olivia)
 
 - [ ] Sign in as **Marco**. Open **Team Attendance**. **See:** today's date and a row each for Ella and Eli
@@ -430,6 +435,14 @@ Clock-ins can't be back-dated in the app, so use a script.
       appears under **People → Users** linked to that employee. Sign in as them to confirm.
 - [ ] On the dashboard calendar click a day with a dot. **See:** what is on that day. Use the arrows to go to
       other months, and **Today** to come back.
+
+## Part 13c: Company calendar (HR)
+- [ ] Open **Company Calendar** in the menu. **See:** the Philippine holidays for the year, each marked **Regular
+      holiday** or **Special non-working holiday**.
+- [ ] As HR, Admin or Owner add an event: a title, a date, optional end date and note, then **Add**.
+      **See:** it in the list. As Marco or Ella you can see the list but not the form.
+- [ ] Open the **Dashboard**. Use the calendar arrows to find that month and click the day. **See:** your event.
+- [ ] Remove your test event with **Remove**. **See:** it disappears.
 
 ## Part 14: Phone check
 
