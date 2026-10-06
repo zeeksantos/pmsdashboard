@@ -53,3 +53,16 @@ export const userManagers: Role[] = ["admin", "owner"];
 export function canManageUsers(role: Role) {
   return userManagers.includes(role);
 }
+
+// Who may create a login when adding an employee, and which access levels they may hand out.
+// HR can give employee, manager or hr; finance (salary access), admin and owner stay with
+// admin/owner (matches admin_create_user).
+export function loginRolesFor(role: Role): Role[] {
+  if (role === "owner") return allRoles;
+  if (role === "admin") return allRoles.filter((r) => r !== "owner");
+  if (role === "hr") return ["employee", "manager", "hr"];
+  return [];
+}
+export function canCreateLogins(role: Role) {
+  return loginRolesFor(role).length > 0;
+}

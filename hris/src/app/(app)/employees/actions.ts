@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/session";
-import { allRoles, canManageRecords, canManageUsers } from "@/lib/roles";
+import { canCreateLogins, canManageRecords, loginRolesFor, type Role } from "@/lib/roles";
 
 const text = (fd: FormData, k: string) => {
   const v = String(fd.get(k) ?? "").trim();
@@ -32,16 +32,15 @@ export async function saveEmployee(
   if ((start && !end) || (!start && end)) return "Enter both shift start and end, or leave both blank.";
   if (start && end && end <= start) return "Shift end must be after shift start.";
 
-  // A new employee gets a sign-in login at the same time (admin/owner only; HR adds the record only).
-  const wantsLogin = !id && canManageUsers(me.role);
+  // A new employee gets a sign-in login at the same time (HR, admin and owner).
+  const wantsLogin = !id && canCreateLogins(me.role);
   const loginEmail = (text(fd, "login_email") ?? "").toLowerCase();
   const loginPassword = String(fd.get("login_password") ?? "");
   const loginRole = text(fd, "login_role") ?? "employee";
   if (wantsLogin) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(loginEmail)) return "Enter a valid login email.";
     if (loginPassword.length < 8) return "The login password must be at least 8 characters.";
-    if (!(allRoles as string[]).includes(loginRole)) return "Choose an access level for the login.";
-    if (loginRole === "owner" && me.role !== "owner") return "Only an owner can create an owner.";
+    if (!loginRolesFor(me.role).includes(loginRole as Role)) return "You can't create a login with that access level.";
   }
 
   const supabase = await createClient();

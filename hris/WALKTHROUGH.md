@@ -180,8 +180,8 @@ but lateness isn't calculated, because nobody is scheduled.
 
 - [ ] Sign in as **Hannah**. Open **Employees**. **See:** all six test people.
 - [ ] Search "Ella". **See:** one row. Set the department filter to Marketing. **See:** Marco, Ella, Eli.
-- [ ] Click **Add employee**. **See:** the **Sign-in login** section at the top (only for Admin and Owner; HR do not
-      see it) and a suggested employee number. As Owner fill the login too (email, **Generate**, Employee). Fill in name "Test Newhire",
+- [ ] Click **Add employee**. **See:** the **Sign-in login** section at the top (Admin, Owner and HR; HR can give Employee, Manager
+      or HR access only) and a suggested employee number. As Owner fill the login too (email, **Generate**, Employee). Fill in name "Test Newhire",
       department HR, position "Recruiter" (a new title is fine), **Reports to** Hannah, type **Contractual**,
       date hired today. **See:** a "Contract end date" box appears. Set it to 10 days from now.
 - [ ] Fill in the biodata fields (birthdate, phone, address, emergency contact, SSS and so on) and set the
