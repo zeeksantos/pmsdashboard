@@ -11,7 +11,7 @@ const options: { mode: ThemeMode; label: string; Icon: typeof Sun }[] = [
   { mode: "dark", label: "Dark", Icon: Moon },
 ];
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({ className, labeled = false }: { className?: string; labeled?: boolean }) {
   const mode = useSyncExternalStore(subscribeTheme, getThemeMode, (): ThemeMode => "system");
 
   // While following the device, switch when the device switches (e.g. at sunset).
@@ -38,11 +38,13 @@ export function ThemeToggle({ className }: { className?: string }) {
           aria-pressed={mode === m}
           onClick={() => setThemeMode(m)}
           className={cn(
-            "rounded-md p-1.5 transition-colors",
+            "rounded-md transition-colors",
+            labeled ? "flex items-center gap-2 px-3 py-2 text-sm" : "p-1.5",
             mode === m ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
           )}
         >
           <Icon size={14} />
+          {labeled && <span>{m === "system" ? "Auto" : label}</span>}
         </button>
       ))}
     </div>

@@ -1,31 +1,38 @@
 @import "tailwindcss";
 
 /* Dark is the default. The theme script in the root layout sets data-theme="light" or "dark"
-   (from the saved choice, or the device setting) before the page paints. */
+   (from the saved choice, or the device setting) before the page paints.
+   --sidebar is the purple frame around the app: it is the same in both themes, just deeper in dark. */
 :root {
   color-scheme: dark;
-  --background: #0b1120;
-  --surface: #111827;
-  --surface-raised: #1a2332;
-  --border: #1f2937;
-  --foreground: #e5e7eb;
-  --muted: #9ca3af;
-  --accent: #3b82f6;
-  --accent-foreground: #ffffff;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --success: #22c55e;
+  --sidebar: #2b1457;
+  --sidebar-foreground: #efe9fb;
+  --sidebar-muted: #c9b9e6;
+  --background: #0f1020;
+  --surface: #171829;
+  --surface-raised: #20223a;
+  --border: #2c2f4c;
+  --foreground: #e9eaf6;
+  --muted: #a3a7c2;
+  --accent: #8b93f8;
+  --accent-foreground: #0f1020;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --success: #4ade80;
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --background: #f3f5f9;
+  --sidebar: #5b2a86;
+  --sidebar-foreground: #f4eefb;
+  --sidebar-muted: #dccdf0;
+  --background: #f6f7fb;
   --surface: #ffffff;
-  --surface-raised: #eef1f6;
-  --border: #d5dbe5;
-  --foreground: #0f172a;
-  --muted: #556070;
-  --accent: #1d4ed8;
+  --surface-raised: #f0f2f8;
+  --border: #e1e5ee;
+  --foreground: #1d1b34;
+  --muted: #5b6072;
+  --accent: #4f46e5;
   --accent-foreground: #ffffff;
   --danger: #b91c1c;
   --warning: #92400e;
@@ -33,6 +40,9 @@
 }
 
 @theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
@@ -49,25 +59,35 @@
 }
 
 body {
-  background: var(--background);
+  background: var(--sidebar);
   color: var(--foreground);
 }
+
+/* Shortcut tiles on the dashboard. White text on these is at least 3:1 (large bold text). */
+.tile-orange { background-image: linear-gradient(135deg, #c2410c, #ea580c); }
+.tile-blue { background-image: linear-gradient(135deg, #1d4ed8, #2563eb); }
+.tile-sky { background-image: linear-gradient(135deg, #0369a1, #0284c7); }
+.tile-green { background-image: linear-gradient(135deg, #15803d, #16a34a); }
 
 /* Payslips and reports always print on white, whichever theme is on screen. */
 @media print {
   :root,
   :root[data-theme="light"] {
     color-scheme: light;
+    --sidebar: #ffffff;
     --background: #ffffff;
     --surface: #ffffff;
     --surface-raised: #ffffff;
     --border: #cbd2dc;
     --foreground: #000000;
     --muted: #444d5c;
-    --accent: #1d4ed8;
+    --accent: #4338ca;
     --accent-foreground: #ffffff;
     --danger: #b91c1c;
     --warning: #92400e;
     --success: #166534;
+  }
+  body {
+    background: #ffffff;
   }
 }
