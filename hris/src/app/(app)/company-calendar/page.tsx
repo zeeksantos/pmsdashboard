@@ -86,11 +86,10 @@ export default async function CompanyCalendarPage({ searchParams }: { searchPara
       </section>
 
       <p className="text-xs text-muted">
-        Regular and special non-working holidays are listed for 2026 and 2027. Eid&apos;l Fitr and Eid&apos;l Adha are
-        proclaimed each year: the 2026 dates are the proclaimed ones and the 2027 dates are tentative, so check them
-        once the proclamation is out. Other holidays that are proclaimed yearly (such as Chinese New Year and All
-        Souls&apos; Day) aren&apos;t pre-filled, so add them here. The calendar only shows holidays. Payroll still
-        treats them as normal days.
+        Regular and special non-working holidays are listed for 2026 and 2027. Holidays that are proclaimed each year
+        (Eid&apos;l Fitr, Eid&apos;l Adha, Chinese New Year and All Souls&apos; Day) have their 2026 dates as proclaimed
+        and their 2027 dates marked tentative, so check them once the proclamation is out. Special working days aren&apos;t
+        pre-filled, so add them here. The calendar only shows holidays. Payroll still treats them as normal days.
       </p>
     </div>
   );
