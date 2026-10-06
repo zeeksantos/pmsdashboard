@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/cn";
 import { activeHref, allHrefs, type NavGroup, type NavIcon } from "@/lib/nav";
 import { Avatar } from "@/components/Avatar";
+import { Logo } from "@/components/Logo";
 
 const icons: Record<NavIcon, typeof Clock> = {
   dashboard: LayoutDashboard,
@@ -107,9 +108,12 @@ export function AppShell({
   const settingsActive = pathname === "/settings";
 
   const brand = (
-    <div className="px-5 py-5">
-      <p className="text-lg font-semibold text-sidebar-foreground">Z-Fast HRIS</p>
-      <p className="text-xs text-sidebar-muted">{roleLabel}</p>
+    <div className="flex items-center gap-3 px-5 py-5">
+      <Logo size={40} />
+      <div>
+        <p className="text-lg font-semibold leading-tight text-sidebar-foreground">Z-Fast HRIS</p>
+        <p className="text-xs text-sidebar-muted">{roleLabel}</p>
+      </div>
     </div>
   );
 
@@ -125,7 +129,10 @@ export function AppShell({
 
       {/* Mobile top bar */}
       <header className="flex items-center justify-between px-4 py-3 print:hidden md:hidden">
-        <p className="font-semibold text-sidebar-foreground">Z-Fast HRIS</p>
+        <div className="flex items-center gap-2">
+          <Logo size={32} />
+          <p className="font-semibold text-sidebar-foreground">Z-Fast HRIS</p>
+        </div>
         <div className="flex items-center gap-2">
           <Link href="/settings" aria-label="Settings"><Avatar name={name} className="h-8 w-8 text-xs" /></Link>
           <button type="button" aria-label="Open menu" onClick={() => setOpenFor(pathname)}
