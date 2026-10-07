@@ -156,3 +156,71 @@ test("13th month never goes negative, and flags the part above the 90,000 tax-ex
   assert.equal(big.amount, 125000);
   assert.equal(big.taxableExcess, 35000);
 });
+
+// --- Holiday pay (DOLE rules) --------------------------------------------------------------
+// 30,000 a month, 5-day week: daily rate = 30,000 x 12 / (5 x 52.2) = 1,379.31
+const holidayOn = { ...none, holiday_pay: true };
+const base = { monthlyRate: 30000, hourlyRate: null, periodsPerMonth: 2 as const };
+const lineAmount = (r: ReturnType<typeof computePayslip>, code: string) =>
+  r.lines.find((l) => l.code === code)?.amount ?? 0;
+
+test("holiday pay does nothing when the option is off", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, reg_holiday_worked: 2, spec_holiday_worked: 1 }, options: none });
+  assert.equal(r.gross, 15000);
+  assert.equal(r.lines.some((l) => l.code.startsWith("HOLIDAY")), false);
+});
+
+test("regular holiday worked: +100% of the daily rate on top of basic (200% in all)", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, reg_holiday_worked: 1 }, options: holidayOn });
+  assert.equal(lineAmount(r, "HOLIDAY_REG"), 1379.31);
+  assert.equal(r.gross, 16379.31);
+});
+
+test("special non-working day worked: +30% of the daily rate (130% in all)", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, spec_holiday_worked: 1 }, options: holidayOn });
+  assert.equal(lineAmount(r, "HOLIDAY_SPECIAL"), 413.79);
+});
+
+test("holidays worked on the rest day: 260% regular, 150% special, all on top of basic", () => {
+  const r = computePayslip({
+    ...base, inputs: { ...full, reg_rest_holiday_worked: 1, spec_rest_holiday_worked: 1 }, options: holidayOn,
+  });
+  assert.equal(lineAmount(r, "HOLIDAY_REG_REST"), 3586.21);
+  assert.equal(lineAmount(r, "HOLIDAY_SPECIAL_REST"), 2068.97);
+});
+
+test("an unworked regular holiday is not an absence for a monthly-paid employee", () => {
+  const withAbsence = { ...full, days_present: 10, absent_days: 1 };
+  const off = computePayslip({ ...base, inputs: { ...withAbsence, reg_holiday_paid_unworked: 1 }, options: { ...none, deduct_absences: true } });
+  assert.equal(lineAmount(off, "ABSENCE"), 1379.31); // option off: still treated as an absence
+  const on = computePayslip({ ...base, inputs: { ...withAbsence, reg_holiday_paid_unworked: 1 }, options: { ...none, deduct_absences: true, holiday_pay: true } });
+  assert.equal(lineAmount(on, "ABSENCE"), 0);
+  assert.equal(on.net, 15000);
+});
+
+test("a real absence next to the holiday is still deducted", () => {
+  const r = computePayslip({
+    ...base,
+    inputs: { ...full, days_present: 9, absent_days: 2, reg_holiday_paid_unworked: 1 },
+    options: { ...none, deduct_absences: true, holiday_pay: true },
+  });
+  assert.equal(lineAmount(r, "ABSENCE"), 1379.31); // 2 absent days, one of them a paid holiday
+});
+
+test("hourly: an unworked regular holiday is paid like a paid leave day", () => {
+  // shift 9 h with a 1 h break = 8 paid hours a day, at 200 an hour
+  const args = { monthlyRate: null, hourlyRate: 200, periodsPerMonth: 2 as const };
+  const without = computePayslip({ ...args, inputs: { ...full, days_present: 10 }, options: holidayOn });
+  const withHoliday = computePayslip({ ...args, inputs: { ...full, days_present: 10, reg_holiday_paid_unworked: 1 }, options: holidayOn });
+  assert.equal(without.gross, 16000);
+  assert.equal(withHoliday.gross, 17600); // + 1 day x 8 h x 200
+  const worked = computePayslip({ ...args, inputs: { ...full, days_present: 11, reg_holiday_worked: 1 }, options: holidayOn });
+  assert.equal(lineAmount(worked, "HOLIDAY_REG"), 1600); // +100% of 8 h x 200
+});
+
+test("holiday premiums are taxable and raise withholding", () => {
+  const taxOnly = { ...none, withhold_tax: true, holiday_pay: true };
+  const a = computePayslip({ ...base, inputs: full, options: taxOnly });
+  const b = computePayslip({ ...base, inputs: { ...full, reg_holiday_worked: 3 }, options: taxOnly });
+  assert.ok(lineAmount(b, "WHT") > lineAmount(a, "WHT"));
+});

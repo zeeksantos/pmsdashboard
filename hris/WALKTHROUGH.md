@@ -314,7 +314,8 @@ Clock-ins can't be back-dated in the app, so use a script.
 
 ### 10.2 Create a draft run
 - [ ] As **Felix**, open **Payroll**. Under **New payroll run** enter: **Period start** `2026-01-01`,
-      **Period end** `2026-01-15`, **Pay date** `2026-01-15`, **2 (semi-monthly)**, all four boxes ticked.
+      **Period end** `2026-01-15`, **Pay date** `2026-01-15`, **2 (semi-monthly)**, the first four boxes ticked and **Holiday pay unticked**
+      (January 1 is a holiday, and these numbers are without holiday pay; 10.2b adds it).
 - [ ] Click **Create draft run**. **See:** the run page saying **Draft: review before finalizing**.
 - [ ] **See** these totals: **Gross ₱99,000.00**, **Deductions ₱14,536.66**, **Net ₱84,463.34**,
       **Employer contributions ₱11,475.00**. These cover the six test people only. Test Newhire joined later than
@@ -338,6 +339,18 @@ Clock-ins can't be back-dated in the app, so use a script.
       3,259.17**.
 - [ ] **Compare by hand:** pick one person and check the numbers against your own calculation or your
       accountant's payroll sheet. This is the most important check in this whole document.
+
+### 10.2b Holiday pay
+- [ ] On the run page click **Delete draft**, then create the same run again (same dates) with **Holiday pay**
+      ticked as well. January 1 is a regular holiday and everyone in the test data worked it.
+- [ ] **See:** each payslip has a new earnings line **Regular holiday premium (1 day × 100%)**, and the gross
+      pay rises by one daily rate: Olivia +2,758.62, Hannah and Felix +1,379.31 each, Marco +1,839.08,
+      Ella +919.54, Eli +827.59. The six gross totals now add up to **₱108,103.45**.
+- [ ] Delete this draft and create the run again with Holiday pay unticked, so the numbers in 10.2 match for the
+      steps below.
+- [ ] Rules used (standard DOLE rules; have your accountant confirm): regular holiday worked 200%, not worked 100%
+      if present or on paid leave the working day before; special non-working day worked 130%, not worked no pay;
+      worked on the rest day 260% (regular) or 150% (special). Overtime and night differential are not included.
 
 ### 10.3 Adjust the draft
 - [ ] On **Ella's** payslip, add an **Earning** "Allowance" of 500. **See:** it appears marked "manual" and
