@@ -346,6 +346,12 @@ Clock-ins can't be back-dated in the app, so use a script.
 - [ ] **See:** each payslip has a new earnings line **Regular holiday premium (1 day × 100%)**, and the gross
       pay rises by one daily rate: Olivia +2,758.62, Hannah and Felix +1,379.31 each, Marco +1,839.08,
       Ella +919.54, Eli +827.59. The six gross totals now add up to **₱108,103.45**.
+- [ ] On the run page click **Holiday pay summary**. **See:** January 1, New Year's Day, listed as a regular holiday
+      in the period; cards for holiday premium pay (**₱9,103.45**), employees with holiday activity (6) and unworked
+      holidays paid (0); a table by holiday type (regular worked: 6 days, ₱9,103.45); and one row per person. Click
+      **Download CSV** and **Print** to check both work.
+- [ ] Open the summary of a run created with Holiday pay unticked. **See:** a yellow note saying that run has no
+      holiday pay.
 - [ ] Delete this draft and create the run again with Holiday pay unticked, so the numbers in 10.2 match for the
       steps below.
 - [ ] Rules used (standard DOLE rules; have your accountant confirm): regular holiday worked 200%, not worked 100%

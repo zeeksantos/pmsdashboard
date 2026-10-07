@@ -224,3 +224,35 @@ test("holiday premiums are taxable and raise withholding", () => {
   const b = computePayslip({ ...base, inputs: { ...full, reg_holiday_worked: 3 }, options: taxOnly });
   assert.ok(lineAmount(b, "WHT") > lineAmount(a, "WHT"));
 });
+
+// --- Holiday pay summary report --------------------------------------------------------------
+import { holidaySummary } from "../src/lib/holiday-report.ts";
+
+test("holiday report: days come from the snapshot, pesos from the payslip lines", () => {
+  const worked = computePayslip({ ...base, inputs: { ...full, reg_holiday_worked: 1, spec_rest_holiday_worked: 1 }, options: holidayOn });
+  const unworked = computePayslip({ ...base, inputs: { ...full, days_present: 10, absent_days: 1, reg_holiday_paid_unworked: 1 }, options: holidayOn });
+  const plain = computePayslip({ ...base, inputs: full, options: holidayOn });
+  const slip = (id: string, name: string, r: typeof worked) => ({
+    employee_id: id, name, employee_no: id, snapshot: r.snapshot, lines: r.lines,
+  });
+  const out = holidaySummary([slip("a", "Ana", worked), slip("b", "Ben", unworked), slip("c", "Cara", plain)], true);
+
+  assert.equal(out.included, true);
+  assert.deepEqual(out.rows.map((r) => r.name), ["Ana", "Ben"]); // Cara had no holiday activity
+  assert.equal(out.rows[0].total, 3448.28); // 1,379.31 + 2,068.97
+  assert.equal(out.rows[1].total, 0);
+  assert.equal(out.rows[1].paidUnworked, 1);
+  assert.equal(out.totals.total, 3448.28);
+  assert.equal(out.totals.paidUnworked, 1);
+  assert.equal(out.totals.days.HOLIDAY_REG, 1);
+  assert.equal(out.totals.days.HOLIDAY_SPECIAL_REST, 1);
+  assert.equal(out.totals.amounts.HOLIDAY_REG, 1379.31);
+});
+
+test("holiday report: a run made without the option reports nothing", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, reg_holiday_worked: 2 }, options: none });
+  const out = holidaySummary([{ employee_id: "a", name: "Ana", employee_no: "a", snapshot: r.snapshot, lines: r.lines }], false);
+  assert.equal(out.included, false);
+  assert.equal(out.rows.length, 0);
+  assert.equal(out.totals.total, 0);
+});
