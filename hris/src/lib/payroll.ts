@@ -62,6 +62,7 @@ export type RunOptions = {
   gov_contributions: boolean;
   withhold_tax: boolean;
   holiday_pay?: boolean; // runs made before holiday pay existed leave this out (= off)
+  field_allowance_per_day?: number; // pesos per field / out-of-office day; leave out or 0 for none
 };
 
 // Holiday pay (DOLE rules), as a multiple of the daily rate ON TOP of what basic pay already covers.
@@ -93,6 +94,7 @@ export type PayInputs = {
   reg_holiday_paid_unworked?: number; // regular holiday not worked but paid (counted in absent_days too)
   reg_rest_holiday_worked?: number; // regular holiday worked on the rest day
   spec_rest_holiday_worked?: number; // special non-working day worked on the rest day
+  field_days?: number; // days timed in as field / out of office
 };
 
 export type Line = {
@@ -138,6 +140,8 @@ export function computePayslip(args: {
   // Unworked regular holidays are paid, so they are not absences.
   const absentDays = Math.max(0, i.absent_days - regPaidUnworked);
   let holidayExtra: Money = 0; // holiday premiums added on top of basic pay
+  const fieldDays = i.field_days ?? 0;
+  const fieldAllowance = Math.max(0, options.field_allowance_per_day ?? 0);
   const snapshot: Record<string, number | string> = {
     days_scheduled: i.days_scheduled, days_present: i.days_present,
     paid_leave_days: i.paid_leave_days, absent_days: absentDays,
@@ -183,6 +187,14 @@ export function computePayslip(args: {
     monthlyBase = 0;
   }
   snapshot.monthly_base = round2(monthlyBase);
+  // Field / out-of-office days are paid as normal attendance; an optional daily allowance goes on top.
+  snapshot.field_days = fieldDays;
+  if (fieldAllowance > 0 && fieldDays > 0) {
+    const allowance = round2(fieldDays * fieldAllowance);
+    add("EARNING", "FIELD_ALLOWANCE", `Field allowance (${fieldDays} day${fieldDays === 1 ? "" : "s"} × ₱${fieldAllowance})`, allowance);
+    holidayExtra += allowance; // taxable, like the holiday premiums
+    snapshot.field_allowance = allowance;
+  }
   if (holidayOn) {
     Object.assign(snapshot, {
       reg_holiday_worked: regWorked, spec_holiday_worked: specWorked, reg_holiday_paid_unworked: regPaidUnworked,

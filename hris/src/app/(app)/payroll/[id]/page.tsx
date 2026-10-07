@@ -9,7 +9,7 @@ import { deleteRun, finalizeRun, reopenRun } from "../actions";
 
 type Slip = {
   id: string; employee_id: string; gross_pay: number; total_deductions: number; net_pay: number;
-  snapshot: { basic_earned?: number; first_period?: string; last_period?: string; taxable_excess?: number } | null;
+  snapshot: { basic_earned?: number; first_period?: string; last_period?: string; taxable_excess?: number; field_days?: number } | null;
   employees: { full_name: string; employee_no: string } | null;
   payslip_lines: { kind: string; amount: number }[];
 };
@@ -45,6 +45,10 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     "absences": opts.deduct_absences, "late/undertime": opts.deduct_late,
     "SSS/PhilHealth/Pag-IBIG": opts.gov_contributions, "income tax": opts.withhold_tax, "holiday pay": opts.holiday_pay,
   }).filter(([, v]) => v).map(([k]) => k);
+  const fieldAllowance = Number((run.options as { field_allowance_per_day?: number } | null)?.field_allowance_per_day ?? 0);
+  if (fieldAllowance > 0) on.push(`field allowance ${formatPeso(fieldAllowance)} per field day`);
+  // Field / out-of-office days are paid as normal attendance; show them when anyone had some.
+  const showField = !thirteenth && slips.some((s) => Number(s.snapshot?.field_days ?? 0) > 0);
 
   const card = "rounded-xl border border-border bg-surface p-4";
 
@@ -143,6 +147,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
                 </>
               ) : (
                 <>
+                  {showField && <th className="px-5 py-3 text-right font-medium">Field days</th>}
                   <th className="px-5 py-3 text-right font-medium">Gross</th>
                   <th className="px-5 py-3 text-right font-medium">Deductions</th>
                   <th className="px-5 py-3 text-right font-medium">Net</th>
@@ -177,6 +182,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
                   </>
                 ) : (
                   <>
+                    {showField && <td className="px-5 py-3 text-right">{Number(s.snapshot?.field_days ?? 0) || "–"}</td>}
                     <td className="px-5 py-3 text-right">{formatPeso(s.gross_pay)}</td>
                     <td className="px-5 py-3 text-right">{formatPeso(s.total_deductions)}</td>
                     <td className="px-5 py-3 text-right font-medium">{formatPeso(s.net_pay)}</td>

@@ -30,12 +30,19 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
   if (end < start) return "The period end is before the start.";
   if (Date.parse(end) - Date.parse(start) > 62 * 86_400_000) return "A pay period can't be longer than about two months.";
 
+  const fieldAllowanceRaw = String(fd.get("field_allowance") ?? "").trim();
+  const fieldAllowance = fieldAllowanceRaw === "" ? 0 : round2(Number(fieldAllowanceRaw));
+  if (!Number.isFinite(fieldAllowance) || fieldAllowance < 0 || fieldAllowance > 100000) {
+    return "Enter the field allowance as an amount in pesos per day, or leave it blank for none.";
+  }
+
   const options: RunOptions = {
     deduct_absences: fd.get("deduct_absences") === "on",
     deduct_late: fd.get("deduct_late") === "on",
     gov_contributions: fd.get("gov_contributions") === "on",
     withhold_tax: fd.get("withhold_tax") === "on",
     holiday_pay: fd.get("holiday_pay") === "on",
+    field_allowance_per_day: fieldAllowance,
   };
 
   const supabase = await createClient();
@@ -43,6 +50,10 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
   const { data: inputs, error: inputsError } = await supabase.rpc("payroll_inputs_v2", { p_start: start, p_end: end });
   if (inputsError) return inputsError.message;
   const rows = (inputs ?? []) as InputRow[];
+
+  const { data: fieldRows, error: fieldError } = await supabase.rpc("payroll_field_days", { p_start: start, p_end: end });
+  if (fieldError) return fieldError.message;
+  const fieldDays = new Map(((fieldRows ?? []) as { employee_id: string; field_days: number }[]).map((f) => [f.employee_id, Number(f.field_days)]));
 
   const { data: salaries, error: salaryError } = await supabase
     .from("employee_salaries")
@@ -67,6 +78,7 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
         reg_holiday_paid_unworked: Number(r.reg_holiday_paid_unworked ?? 0),
         reg_rest_holiday_worked: Number(r.reg_rest_holiday_worked ?? 0),
         spec_rest_holiday_worked: Number(r.spec_rest_holiday_worked ?? 0),
+        field_days: fieldDays.get(r.employee_id) ?? 0,
       },
       options,
     });
