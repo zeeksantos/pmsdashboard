@@ -371,6 +371,17 @@ Clock-ins can't be back-dated in the app, so use a script.
 - [ ] Delete this draft and create the run once more with no allowance, so the numbers in 10.2 match for the
       steps below.
 
+### 10.2d Leave pay summary
+- [ ] On the payroll run page, click **Leave pay summary** (not shown on 13th month runs).
+      **See:** four cards: paid leave days, paid leave pay (already inside basic pay), unpaid leave days, and pay
+      withheld for unpaid leave. Below them a table by leave type and a table by employee.
+- [ ] Compare with **Leave**: an approved leave on a working day in the period shows up; a **pending** or rejected
+      request does not; a day the person timed in does not; a half-day paid leave counts as 0.5.
+- [ ] Click **Download CSV** and **Print**. **See:** one row per employee plus a Total row.
+- [ ] Approve a new leave inside the period and reopen the summary. **See:** a yellow note naming that employee: their
+      payslip was calculated before the change. Delete the draft and create it again to refresh.
+- [ ] If the run was created with **Deduct absences** unticked, unpaid leave of monthly staff shows ₱0.00 withheld.
+
 ### 10.3 Adjust the draft
 - [ ] On **Ella's** payslip, add an **Earning** "Allowance" of 500. **See:** it appears marked "manual" and
       Net becomes **9,650.00**.
