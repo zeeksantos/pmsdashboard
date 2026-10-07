@@ -293,3 +293,50 @@ test("the field allowance works for hourly employees too", () => {
   assert.equal(r.lines.find((l) => l.code === "FIELD_ALLOWANCE")?.amount, 600);
   assert.equal(r.gross, 16600);
 });
+
+// --- Leave pay summary report ----------------------------------------------------------------
+import { dailyValue, leaveSummary } from "../src/lib/leave-report.ts";
+
+test("leave report: paid leave valued at the daily rate, unpaid only when absences are deducted", () => {
+  const monthly = computePayslip({ ...base, inputs: { ...full, days_present: 8, paid_leave_days: 2, absent_days: 1 }, options: { ...none, deduct_absences: true } });
+  const slip = { employee_id: "m", name: "Mia", employee_no: "E1", snapshot: monthly.snapshot };
+  assert.equal(dailyValue(monthly.snapshot), 1379.31);
+  const leave = [
+    { employee_id: "m", leave_type: "Vacation Leave", is_paid: true, days: 2 },
+    { employee_id: "m", leave_type: "Unpaid Leave", is_paid: false, days: 1 },
+  ];
+  const on = leaveSummary([slip], leave, true);
+  assert.equal(on.totals.paidDays, 2);
+  assert.equal(on.totals.paidValue, 2758.62);
+  assert.equal(on.totals.unpaidDays, 1);
+  assert.equal(on.totals.unpaidValue, 1379.31);
+  assert.deepEqual(on.mismatched, []);
+  const off = leaveSummary([slip], leave, false);
+  assert.equal(off.totals.unpaidDays, 1);
+  assert.equal(off.totals.unpaidValue, 0); // monthly, absences not deducted: no pay was withheld
+  assert.deepEqual(on.byType.map((t) => t.leave_type), ["Vacation Leave", "Unpaid Leave"]); // paid types first
+});
+
+test("leave report: hourly staff are valued at paid hours x rate, and unpaid leave is simply not paid", () => {
+  const hourly = computePayslip({
+    monthlyRate: null, hourlyRate: 200, periodsPerMonth: 2,
+    inputs: { ...full, days_present: 9, paid_leave_days: 1, absent_days: 1 }, options: none,
+  });
+  const slip = { employee_id: "h", name: "Hal", employee_no: "E2", snapshot: hourly.snapshot };
+  assert.equal(dailyValue(hourly.snapshot), 1600); // 9 h shift - 1 h break = 8 h x 200
+  const out = leaveSummary([slip], [
+    { employee_id: "h", leave_type: "Sick Leave", is_paid: true, days: 1 },
+    { employee_id: "h", leave_type: "Unpaid Leave", is_paid: false, days: 1 },
+  ], false);
+  assert.equal(out.totals.paidValue, 1600);
+  assert.equal(out.totals.unpaidValue, 1600);
+});
+
+test("leave report: flags employees whose leave changed after the payslip was calculated", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, days_present: 9, paid_leave_days: 2, absent_days: 0 }, options: none });
+  const slip = { employee_id: "x", name: "Xan", employee_no: "E3", snapshot: r.snapshot };
+  const out = leaveSummary([slip], [{ employee_id: "x", leave_type: "Vacation Leave", is_paid: true, days: 3 }], true);
+  assert.deepEqual(out.mismatched, ["Xan"]);
+  // leave for someone with no payslip in the run is ignored
+  assert.equal(leaveSummary([slip], [{ employee_id: "zzz", leave_type: "Vacation Leave", is_paid: true, days: 5 }], true).rows.length, 0);
+});
