@@ -64,6 +64,9 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-3">
+          {!thirteenth && (
+            <Link href={`/payroll/${id}/holidays`} className="rounded-lg border border-border px-4 py-2 text-sm text-muted hover:text-foreground">Holiday pay summary</Link>
+          )}
           <a href={`/payroll/${id}/export`} className="rounded-lg border border-border px-4 py-2 text-sm text-muted hover:text-foreground">Download CSV</a>
           {draft && (
             <>
