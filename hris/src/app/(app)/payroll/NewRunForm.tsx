@@ -45,6 +45,14 @@ export function NewRunForm({ start, end }: { start: string; end: string }) {
         <label className="mb-1.5 block text-sm text-muted">Label (optional)</label>
         <input name="label" placeholder="e.g. October 1st half" className={input} />
       </div>
+      <div className="sm:col-span-2">
+        <label className="mb-1.5 block text-sm text-muted">Field allowance per field day (optional)</label>
+        <input name="field_allowance" type="number" min="0" step="0.01" placeholder="e.g. 250, or leave blank for none" className={input} />
+        <p className="mt-1 text-xs text-muted">
+          Days timed in as Field / out of office are always paid as normal attendance. If you give a daily allowance for
+          them, enter the amount in pesos and it is added to each person&apos;s pay for every field day in the period.
+        </p>
+      </div>
       <fieldset className="flex flex-col gap-3 sm:col-span-2">
         <legend className="mb-1 text-sm text-muted">Include</legend>
         {options.map(([name, title, hint]) => (

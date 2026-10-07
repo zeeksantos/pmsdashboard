@@ -358,6 +358,19 @@ Clock-ins can't be back-dated in the app, so use a script.
       if present or on paid leave the working day before; special non-working day worked 130%, not worked no pay;
       worked on the rest day 260% (regular) or 150% (special). Overtime and night differential are not included.
 
+### 10.2c Field / out-of-office days and the field allowance
+- [ ] In SQL Editor, run `hris/supabase/test_field_days.sql` (open the file, copy all, paste, Run).
+      **See:** two rows for TEST-005 (Ella), January 8 and 9, marked FIELD.
+- [ ] As **Felix**, delete the current draft and create the run again (Jan 1 to Jan 15, Holiday pay unticked) with a
+      **Field allowance per field day** of `250`.
+- [ ] **See:** a **Field days** column on the run page showing 2 for Ella and a dash for everyone else. Open **Ella's**
+      payslip. **See:** a new earnings line **Field allowance (2 days × ₱250)** of 500.00, and gross pay of 10,500.00.
+- [ ] Delete the draft again and create it once more with the allowance left **blank**. **See:** the Field days column
+      still shows 2 for Ella, but there is no allowance line and her gross is back to 10,000.00. Field days are always
+      paid as normal attendance; the allowance is only the optional extra.
+- [ ] Delete this draft and create the run once more with no allowance, so the numbers in 10.2 match for the
+      steps below.
+
 ### 10.3 Adjust the draft
 - [ ] On **Ella's** payslip, add an **Earning** "Allowance" of 500. **See:** it appears marked "manual" and
       Net becomes **9,650.00**.

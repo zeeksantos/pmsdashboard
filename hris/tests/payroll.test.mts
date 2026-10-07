@@ -256,3 +256,40 @@ test("holiday report: a run made without the option reports nothing", () => {
   assert.equal(out.rows.length, 0);
   assert.equal(out.totals.total, 0);
 });
+
+// --- Field / out-of-office days ----------------------------------------------------------------
+test("field days are recorded on the payslip and cost nothing without an allowance", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, field_days: 3 }, options: none });
+  assert.equal(r.snapshot.field_days, 3);
+  assert.equal(r.gross, 15000);
+  assert.equal(r.lines.some((l) => l.code === "FIELD_ALLOWANCE"), false);
+});
+
+test("field allowance: days x the daily amount, as an earning", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, field_days: 3 }, options: { ...none, field_allowance_per_day: 250 } });
+  assert.equal(r.lines.find((l) => l.code === "FIELD_ALLOWANCE")?.amount, 750);
+  assert.equal(r.gross, 15750);
+  assert.equal(r.snapshot.field_allowance, 750);
+});
+
+test("no field days means no allowance line, even with a daily amount set", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, field_days: 0 }, options: { ...none, field_allowance_per_day: 250 } });
+  assert.equal(r.gross, 15000);
+  assert.equal(r.lines.some((l) => l.code === "FIELD_ALLOWANCE"), false);
+});
+
+test("field allowance is taxable and raises withholding", () => {
+  const taxOnly = { ...none, withhold_tax: true };
+  const a = computePayslip({ ...base, inputs: { ...full, field_days: 5 }, options: taxOnly });
+  const b = computePayslip({ ...base, inputs: { ...full, field_days: 5 }, options: { ...taxOnly, field_allowance_per_day: 500 } });
+  assert.ok(lineAmount(b, "WHT") > lineAmount(a, "WHT"));
+});
+
+test("the field allowance works for hourly employees too", () => {
+  const r = computePayslip({
+    monthlyRate: null, hourlyRate: 200, periodsPerMonth: 2,
+    inputs: { ...full, days_present: 10, field_days: 2 }, options: { ...none, field_allowance_per_day: 300 },
+  });
+  assert.equal(r.lines.find((l) => l.code === "FIELD_ALLOWANCE")?.amount, 600);
+  assert.equal(r.gross, 16600);
+});
