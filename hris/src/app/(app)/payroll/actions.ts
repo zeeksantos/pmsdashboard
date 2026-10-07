@@ -35,11 +35,12 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
     deduct_late: fd.get("deduct_late") === "on",
     gov_contributions: fd.get("gov_contributions") === "on",
     withhold_tax: fd.get("withhold_tax") === "on",
+    holiday_pay: fd.get("holiday_pay") === "on",
   };
 
   const supabase = await createClient();
 
-  const { data: inputs, error: inputsError } = await supabase.rpc("payroll_inputs", { p_start: start, p_end: end });
+  const { data: inputs, error: inputsError } = await supabase.rpc("payroll_inputs_v2", { p_start: start, p_end: end });
   if (inputsError) return inputsError.message;
   const rows = (inputs ?? []) as InputRow[];
 
@@ -62,6 +63,10 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
         paid_leave_days: Number(r.paid_leave_days), absent_days: Number(r.absent_days),
         late_minutes: Number(r.late_minutes), undertime_minutes: Number(r.undertime_minutes),
         shift_hours: Number(r.shift_hours), days_per_week: Number(r.days_per_week),
+        reg_holiday_worked: Number(r.reg_holiday_worked ?? 0), spec_holiday_worked: Number(r.spec_holiday_worked ?? 0),
+        reg_holiday_paid_unworked: Number(r.reg_holiday_paid_unworked ?? 0),
+        reg_rest_holiday_worked: Number(r.reg_rest_holiday_worked ?? 0),
+        spec_rest_holiday_worked: Number(r.spec_rest_holiday_worked ?? 0),
       },
       options,
     });

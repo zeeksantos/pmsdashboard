@@ -43,7 +43,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const opts = (run.options ?? {}) as Record<string, boolean>;
   const on = Object.entries({
     "absences": opts.deduct_absences, "late/undertime": opts.deduct_late,
-    "SSS/PhilHealth/Pag-IBIG": opts.gov_contributions, "income tax": opts.withhold_tax,
+    "SSS/PhilHealth/Pag-IBIG": opts.gov_contributions, "income tax": opts.withhold_tax, "holiday pay": opts.holiday_pay,
   }).filter(([, v]) => v).map(([k]) => k);
 
   const card = "rounded-xl border border-border bg-surface p-4";

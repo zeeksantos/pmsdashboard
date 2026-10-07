@@ -11,6 +11,11 @@ const options: [string, string, string][] = [
   ["deduct_late", "Deduct late and undertime", "By the minute, from the employee's clock-ins."],
   ["gov_contributions", "Compute SSS, PhilHealth and Pag-IBIG", "Employee share deducted; employer share recorded as a cost."],
   ["withhold_tax", "Withhold income tax", "Annualized on pay after contributions, using the TRAIN table."],
+  [
+    "holiday_pay",
+    "Holiday pay",
+    "From the Company Calendar. Regular holiday: worked 200%, not worked 100% (if present the day before). Special non-working day: worked 130%, not worked no pay. On a rest day: 260% regular, 150% special.",
+  ],
 ];
 
 export function NewRunForm({ start, end }: { start: string; end: string }) {
