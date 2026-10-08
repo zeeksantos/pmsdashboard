@@ -340,3 +340,43 @@ test("leave report: flags employees whose leave changed after the payslip was ca
   // leave for someone with no payslip in the run is ignored
   assert.equal(leaveSummary([slip], [{ employee_id: "zzz", leave_type: "Vacation Leave", is_paid: true, days: 5 }], true).rows.length, 0);
 });
+
+// --- Overtime (DOLE rules) -----------------------------------------------------------------
+const otOn = { ...none, overtime_pay: true };
+
+test("overtime does nothing when the option is off", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, overtime_hours: { ORDINARY: 4 } }, options: none });
+  assert.equal(r.gross, 15000);
+  assert.equal(r.lines.some((l) => l.code === "OVERTIME"), false);
+});
+
+test("overtime pays hourly rate x hours x the rate for the kind of day", () => {
+  const r = computePayslip({ ...base, inputs: { ...full, overtime_hours: { ORDINARY: 4, REST: 2, REGULAR: 1 } }, options: otOn });
+  const hourly = (r.snapshot.daily_rate as number) / ((full.shift_hours as number) - 1);
+  const money = (n: number) => Math.round(n * 100) / 100;
+  const expected = money(4 * hourly * 1.25) + money(2 * hourly * 1.69) + money(1 * hourly * 2.6);
+  const got = r.lines.filter((l) => l.code === "OVERTIME").reduce((s, l) => s + l.amount, 0);
+  assert.equal(r.lines.filter((l) => l.code === "OVERTIME").length, 3);
+  assert.ok(Math.abs(got - expected) < 0.02, `${got} vs ${expected}`);
+  assert.equal(r.snapshot.overtime_hours, 7);
+  assert.ok(Math.abs(r.gross - (15000 + got)) < 0.02);
+});
+
+test("hourly staff overtime uses their hourly rate directly", () => {
+  const r = computePayslip({
+    monthlyRate: null, hourlyRate: 200, periodsPerMonth: 2,
+    inputs: { ...full, overtime_hours: { ORDINARY: 2, SPECIAL_REST: 1 } }, options: otOn,
+  });
+  assert.equal(lineAmount(r, "OVERTIME"), 500); // first line: 2 h x 200 x 125%
+  const total = r.lines.filter((l) => l.code === "OVERTIME").reduce((s, l) => s + l.amount, 0);
+  assert.equal(total, 500 + 390); // + 1 h x 200 x 195%
+});
+
+test("overtime is taxable and counts toward 13th month only when given", () => {
+  const taxOn = { ...otOn, withhold_tax: true };
+  const a = computePayslip({ ...base, inputs: full, options: taxOn });
+  const b = computePayslip({ ...base, inputs: { ...full, overtime_hours: { ORDINARY: 20 } }, options: taxOn });
+  assert.ok((b.snapshot.taxable_monthly as number) > (a.snapshot.taxable_monthly as number));
+  assert.equal(computeThirteenthMonth({ basic_pay: 120000, absence_deduction: 0, late_deduction: 0 }).amount, 10000);
+  assert.equal(computeThirteenthMonth({ basic_pay: 120000, absence_deduction: 0, late_deduction: 0, overtime_pay: 12000 }).amount, 11000);
+});

@@ -17,6 +17,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/attendance", label: "My Attendance" },
   ];
   if (canViewTeamAttendance(me.role)) time.push({ href: "/team-attendance", label: "Team Attendance" });
+  if (me.employee) time.push({ href: "/overtime", label: "My Overtime" });
+  if (canViewTeamAttendance(me.role)) time.push({ href: "/overtime/approvals", label: "Overtime Approvals" });
   time.push({ href: "/company-calendar", label: "Company Calendar" });
 
   const leave: NavLink[] = [];

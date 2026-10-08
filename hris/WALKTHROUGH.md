@@ -382,6 +382,21 @@ Clock-ins can't be back-dated in the app, so use a script.
       payslip was calculated before the change. Delete the draft and create it again to refresh.
 - [ ] If the run was created with **Deduct absences** unticked, unpaid leave of monthly staff shows ₱0.00 withheld.
 
+### 10.2e Overtime pay
+- [ ] As an employee (e.g. **Ella**), open **Time & Attendance → My Overtime**. File a request for a day you timed in
+      (date, hours, reason). **See:** it shows as pending. A date with no time-in, a future date, or a second request
+      for the same date is refused with a message.
+- [ ] As the employee's manager, HR, admin or owner, open **Overtime Approvals** and approve it. **See:** it moves to
+      Recent decisions as approved. You can't approve your own request (owner excepted).
+- [ ] As **Felix**, create a payroll run covering that date with **Overtime pay** ticked. **See:** an earnings line
+      **Overtime, ordinary day (2 h × 125%)** on that employee's payslip. Hourly rate = daily rate ÷ paid hours of
+      the shift (shift less the 1-hour break); hourly staff use their hourly rate.
+- [ ] Rates (standard DOLE; have your accountant confirm): ordinary day 125%; rest day or special non-working day
+      169%; special day on the rest day 195%; regular holiday 260%; regular holiday on the rest day 338%.
+- [ ] Create the run again with Overtime pay **unticked**, or with the request still pending. **See:** no overtime line.
+- [ ] Overtime is taxable. It also counts toward the 13th month pay because the company chose that (PD 851 itself
+      leaves overtime out). The 13th month payslip line says "basic + overtime" when overtime is included.
+
 ### 10.3 Adjust the draft
 - [ ] On **Ella's** payslip, add an **Earning** "Allowance" of 500. **See:** it appears marked "manual" and
       Net becomes **9,650.00**.

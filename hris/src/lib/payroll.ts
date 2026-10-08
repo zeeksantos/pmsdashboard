@@ -5,7 +5,7 @@
 // against the current SSS, PhilHealth, Pag-IBIG and BIR circulars before relying on payslips.
 
 export const RATES_VERSION =
-  "SSS 2025 (5% employee, MSC 5,000-35,000) · PhilHealth 5% (floor 10,000, cap 100,000) · Pag-IBIG 2% (cap 10,000) · BIR TRAIN 2023 table · Holiday pay per DOLE rules (regular holiday 200% worked / 100% unworked, special non-working 130%, rest day 260% / 150%)";
+  "SSS 2025 (5% employee, MSC 5,000-35,000) · PhilHealth 5% (floor 10,000, cap 100,000) · Pag-IBIG 2% (cap 10,000) · BIR TRAIN 2023 table · Holiday pay per DOLE rules (regular holiday 200% worked / 100% unworked, special non-working 130%, rest day 260% / 150%) · Overtime per DOLE rules (ordinary day 125%, rest day or special day 130% + 30%, regular holiday 260%)";
 
 const WEEKS_PER_YEAR = 52.2; // 5-day week => 261 paid days/year, 6-day => ~313
 
@@ -63,6 +63,21 @@ export type RunOptions = {
   withhold_tax: boolean;
   holiday_pay?: boolean; // runs made before holiday pay existed leave this out (= off)
   field_allowance_per_day?: number; // pesos per field / out-of-office day; leave out or 0 for none
+  overtime_pay?: boolean; // pay approved overtime hours; runs made before overtime existed leave this out (= off)
+};
+
+// Overtime (DOLE rules) as a multiple of the HOURLY rate for each overtime hour, by the kind of day:
+//  ordinary day 125%; rest day or special non-working day 130% x 130% = 169%; special day on the
+//  rest day 150% x 130% = 195%; regular holiday 200% x 130% = 260%; regular holiday on the rest day
+//  260% x 130% = 338%. The whole amount is added; basic pay does not cover these hours.
+export type OvertimeKind = "ORDINARY" | "REST" | "SPECIAL" | "SPECIAL_REST" | "REGULAR" | "REGULAR_REST";
+export const OVERTIME_RATES: Record<OvertimeKind, number> = {
+  ORDINARY: 1.25, REST: 1.69, SPECIAL: 1.69, SPECIAL_REST: 1.95, REGULAR: 2.6, REGULAR_REST: 3.38,
+};
+export const OVERTIME_KINDS = Object.keys(OVERTIME_RATES) as OvertimeKind[];
+export const overtimeKindLabels: Record<OvertimeKind, string> = {
+  ORDINARY: "ordinary day", REST: "rest day", SPECIAL: "special non-working day",
+  SPECIAL_REST: "special day on rest day", REGULAR: "regular holiday", REGULAR_REST: "regular holiday on rest day",
 };
 
 // Holiday pay (DOLE rules), as a multiple of the daily rate ON TOP of what basic pay already covers.
@@ -95,6 +110,7 @@ export type PayInputs = {
   reg_rest_holiday_worked?: number; // regular holiday worked on the rest day
   spec_rest_holiday_worked?: number; // special non-working day worked on the rest day
   field_days?: number; // days timed in as field / out of office
+  overtime_hours?: Partial<Record<OvertimeKind, number>>; // approved overtime hours by kind of day
 };
 
 export type Line = {
@@ -139,7 +155,9 @@ export function computePayslip(args: {
   const specRestWorked = holidayOn ? i.spec_rest_holiday_worked ?? 0 : 0;
   // Unworked regular holidays are paid, so they are not absences.
   const absentDays = Math.max(0, i.absent_days - regPaidUnworked);
-  let holidayExtra: Money = 0; // holiday premiums added on top of basic pay
+  let holidayExtra: Money = 0; // holiday premiums, overtime and allowances added on top of basic pay
+  let otHourly = 0; // pay for one hour of this person's work, the base for overtime
+  const overtimeOn = options.overtime_pay === true;
   const fieldDays = i.field_days ?? 0;
   const fieldAllowance = Math.max(0, options.field_allowance_per_day ?? 0);
   const snapshot: Record<string, number | string> = {
@@ -170,6 +188,7 @@ export function computePayslip(args: {
     monthlyBase = monthlyRate;
     snapshot.monthly_rate = monthlyRate;
     snapshot.daily_rate = round2(dailyRate);
+    otHourly = dailyRate / Math.max(1, shiftHours - (args.unpaidBreakHours ?? DEFAULT_UNPAID_BREAK_HOURS));
     holidayExtra += addHolidayLines(add, dailyRate, { regWorked, specWorked, regRestWorked, specRestWorked });
   } else if (hourlyRate != null) {
     // Hourly: paid for the hours actually covered (paid leave counts; lateness is subtracted).
@@ -182,6 +201,7 @@ export function computePayslip(args: {
     monthlyBase = round2(hours * hourlyRate) * periodsPerMonth;
     snapshot.hourly_rate = hourlyRate;
     snapshot.paid_hours = round2(hours);
+    otHourly = hourlyRate;
     holidayExtra += addHolidayLines(add, hourlyRate * paidPerDay, { regWorked, specWorked, regRestWorked, specRestWorked });
   } else {
     monthlyBase = 0;
@@ -194,6 +214,23 @@ export function computePayslip(args: {
     add("EARNING", "FIELD_ALLOWANCE", `Field allowance (${fieldDays} day${fieldDays === 1 ? "" : "s"} × ₱${fieldAllowance})`, allowance);
     holidayExtra += allowance; // taxable, like the holiday premiums
     snapshot.field_allowance = allowance;
+  }
+  if (overtimeOn && otHourly > 0) {
+    let hoursTotal = 0, payTotal = 0;
+    for (const kind of OVERTIME_KINDS) {
+      const h = i.overtime_hours?.[kind] ?? 0;
+      if (!(h > 0)) continue;
+      const amount = round2(h * otHourly * OVERTIME_RATES[kind]);
+      add("EARNING", "OVERTIME", `Overtime, ${overtimeKindLabels[kind]} (${round2(h)} h × ${Math.round(OVERTIME_RATES[kind] * 100)}%)`, amount);
+      hoursTotal += h;
+      payTotal += amount;
+    }
+    if (hoursTotal > 0) {
+      holidayExtra += payTotal; // taxable, like the holiday premiums
+      snapshot.overtime_hours = round2(hoursTotal);
+      snapshot.overtime_pay = round2(payTotal);
+      snapshot.overtime_hourly_rate = round2(otHourly);
+    }
   }
   if (holidayOn) {
     Object.assign(snapshot, {
@@ -252,7 +289,8 @@ function addHolidayLines(
 
 // --- 13th month pay (PD 851) ---------------------------------------------------------------
 // Total basic salary actually earned in the calendar year, divided by 12. Absences and lateness
-// already reduce the basic salary earned. Allowances, bonuses and overtime are not included.
+// already reduce the basic salary earned. Allowances and bonuses are not included. Overtime is included here
+// because this company chose to (PD 851 itself does not count it; have your accountant confirm).
 
 export const THIRTEENTH_MONTH_BASIS = "13th month pay: basic salary earned in the year ÷ 12 (PD 851)";
 // 13th month pay and other benefits are income-tax exempt up to this combined amount (TRAIN law).
@@ -262,9 +300,11 @@ export function computeThirteenthMonth(basis: {
   basic_pay: number;
   absence_deduction: number;
   late_deduction: number;
-}): { basicEarned: Money; amount: Money; taxableExcess: Money } {
+  overtime_pay?: number; // counted in the basis when given (a company policy choice; PD 851 itself leaves overtime out)
+}): { basicEarned: Money; overtime: Money; amount: Money; taxableExcess: Money } {
   const basicEarned = Math.max(0, round2(basis.basic_pay - basis.absence_deduction - basis.late_deduction));
-  const amount = round2(basicEarned / 12);
+  const overtime = Math.max(0, round2(basis.overtime_pay ?? 0));
+  const amount = round2((basicEarned + overtime) / 12);
   // At least this much is taxable: it ignores other benefits that count toward the same limit.
-  return { basicEarned, amount, taxableExcess: Math.max(0, round2(amount - THIRTEENTH_TAX_EXEMPT_LIMIT)) };
+  return { basicEarned, overtime, amount, taxableExcess: Math.max(0, round2(amount - THIRTEENTH_TAX_EXEMPT_LIMIT)) };
 }

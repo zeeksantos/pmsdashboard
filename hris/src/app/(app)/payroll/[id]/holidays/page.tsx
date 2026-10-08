@@ -147,7 +147,7 @@ export default async function HolidayPaySummaryPage({ params }: { params: Promis
 
       <p className="text-xs text-muted">
         Standard DOLE holiday rules; have your accountant confirm them. Premium pay is part of gross pay and taxable, and is
-        not counted in the 13th month pay. Overtime and night differential are not included.
+        not counted in the 13th month pay. Overtime is paid separately (see the Overtime pay option) and night differential is not included.
       </p>
     </div>
   );

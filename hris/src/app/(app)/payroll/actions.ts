@@ -8,7 +8,7 @@ import { canManagePayroll } from "@/lib/roles";
 import { currentSalary } from "@/lib/salary";
 import {
   RATES_VERSION, THIRTEENTH_MONTH_BASIS, computePayslip, computeThirteenthMonth, round2,
-  type PayInputs, type RunOptions,
+  type OvertimeKind, type PayInputs, type RunOptions,
 } from "@/lib/payroll";
 
 type InputRow = PayInputs & { employee_id: string };
@@ -43,6 +43,7 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
     withhold_tax: fd.get("withhold_tax") === "on",
     holiday_pay: fd.get("holiday_pay") === "on",
     field_allowance_per_day: fieldAllowance,
+    overtime_pay: fd.get("overtime_pay") === "on",
   };
 
   const supabase = await createClient();
@@ -54,6 +55,18 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
   const { data: fieldRows, error: fieldError } = await supabase.rpc("payroll_field_days", { p_start: start, p_end: end });
   if (fieldError) return fieldError.message;
   const fieldDays = new Map(((fieldRows ?? []) as { employee_id: string; field_days: number }[]).map((f) => [f.employee_id, Number(f.field_days)]));
+
+  // Approved overtime hours per person and kind of day (only fetched when the option is on).
+  const overtime = new Map<string, Partial<Record<OvertimeKind, number>>>();
+  if (options.overtime_pay) {
+    const { data: otRows, error: otError } = await supabase.rpc("payroll_overtime", { p_start: start, p_end: end });
+    if (otError) return otError.message;
+    for (const o of (otRows ?? []) as { employee_id: string; hours: number | string; day_kind: OvertimeKind }[]) {
+      const m = overtime.get(o.employee_id) ?? {};
+      m[o.day_kind] = (m[o.day_kind] ?? 0) + Number(o.hours);
+      overtime.set(o.employee_id, m);
+    }
+  }
 
   const { data: salaries, error: salaryError } = await supabase
     .from("employee_salaries")
@@ -79,6 +92,7 @@ export async function createRun(_prev: string | null, fd: FormData): Promise<str
         reg_rest_holiday_worked: Number(r.reg_rest_holiday_worked ?? 0),
         spec_rest_holiday_worked: Number(r.spec_rest_holiday_worked ?? 0),
         field_days: fieldDays.get(r.employee_id) ?? 0,
+        overtime_hours: overtime.get(r.employee_id),
       },
       options,
     });
@@ -181,7 +195,7 @@ export async function deleteRun(_prev: string | null, fd: FormData): Promise<str
 
 type Basis = {
   employee_id: string; basic_pay: number; absence_deduction: number; late_deduction: number;
-  runs_counted: number; first_period: string; last_period: string;
+  runs_counted: number; first_period: string; last_period: string; overtime_pay: number;
 };
 
 export async function createThirteenthRun(_prev: string | null, fd: FormData): Promise<string | null> {
@@ -204,7 +218,7 @@ export async function createThirteenthRun(_prev: string | null, fd: FormData): P
     return `There ${drafts.length === 1 ? "is a draft payroll run" : `are ${drafts.length} draft payroll runs`} ending in ${year}. Finalize or delete ${drafts.length === 1 ? "it" : "them"} first so the 13th month uses complete figures.`;
   }
 
-  const { data: basis, error: basisError } = await supabase.rpc("thirteenth_month_basis", { p_year: year });
+  const { data: basis, error: basisError } = await supabase.rpc("thirteenth_month_basis_v2", { p_year: year });
   if (basisError) return basisError.message;
   const rows = (basis ?? []) as Basis[];
   if (!rows.length) return `No finalized payroll runs ended in ${year}. Finalize your regular runs for that year first.`;
@@ -213,6 +227,7 @@ export async function createThirteenthRun(_prev: string | null, fd: FormData): P
     .map((r) => {
       const c = computeThirteenthMonth({
         basic_pay: Number(r.basic_pay), absence_deduction: Number(r.absence_deduction), late_deduction: Number(r.late_deduction),
+        overtime_pay: Number(r.overtime_pay ?? 0),
       });
       return { r, c };
     })
@@ -246,7 +261,7 @@ export async function createThirteenthRun(_prev: string | null, fd: FormData): P
       run_id: run.id, employee_id: r.employee_id,
       snapshot: {
         kind: "THIRTEENTH", year, basic_pay: Number(r.basic_pay), absence_deduction: Number(r.absence_deduction),
-        late_deduction: Number(r.late_deduction), basic_earned: c.basicEarned, taxable_excess: c.taxableExcess,
+        late_deduction: Number(r.late_deduction), overtime_pay: c.overtime, basic_earned: c.basicEarned, taxable_excess: c.taxableExcess,
         runs_counted: r.runs_counted, first_period: r.first_period, last_period: r.last_period,
       },
     })))
@@ -257,7 +272,7 @@ export async function createThirteenthRun(_prev: string | null, fd: FormData): P
   const { error: lineError } = await supabase.from("payslip_lines").insert(
     computed.map(({ r, c }) => ({
       payslip_id: slipByEmp.get(r.employee_id)!, kind: "EARNING", code: "THIRTEENTH", sort_order: 0,
-      label: `13th month pay (₱${c.basicEarned.toLocaleString("en-PH", { minimumFractionDigits: 2 })} basic earned ÷ 12)`,
+      label: `13th month pay (₱${c.basicEarned.toLocaleString("en-PH", { minimumFractionDigits: 2 })} basic${c.overtime > 0 ? ` + ₱${c.overtime.toLocaleString("en-PH", { minimumFractionDigits: 2 })} overtime` : " earned"} ÷ 12)`,
       amount: c.amount,
     }))
   );

@@ -16,6 +16,11 @@ const options: [string, string, string][] = [
     "Holiday pay",
     "From the Company Calendar. Regular holiday: worked 200%, not worked 100% (if present the day before). Special non-working day: worked 130%, not worked no pay. On a rest day: 260% regular, 150% special.",
   ],
+  [
+    "overtime_pay",
+    "Overtime pay",
+    "Approved overtime requests only. Ordinary day 125% of the hourly rate; rest day or special day 169%; special day on rest day 195%; regular holiday 260% (338% on the rest day).",
+  ],
 ];
 
 export function NewRunForm({ start, end }: { start: string; end: string }) {
