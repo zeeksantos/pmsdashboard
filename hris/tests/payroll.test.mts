@@ -141,7 +141,7 @@ test("13th month = basic earned in the year / 12, after absences and lateness", 
   // full year at 30,000/month: 360,000 basic -> 30,000
   assert.deepEqual(
     computeThirteenthMonth({ basic_pay: 360000, absence_deduction: 0, late_deduction: 0 }),
-    { basicEarned: 360000, amount: 30000, taxableExcess: 0 });
+    { basicEarned: 360000, overtime: 0, amount: 30000, taxableExcess: 0 });
   // absences and lateness reduce the basic salary earned
   assert.equal(computeThirteenthMonth({ basic_pay: 240000, absence_deduction: 1000, late_deduction: 200 }).amount, 19900);
   // joined mid-year: only six months of basic, so pro-rated automatically (60,000 / 12)
