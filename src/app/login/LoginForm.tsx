@@ -50,6 +50,9 @@ export function LoginForm() {
       <Link href="/reset-password" className="text-center text-sm text-muted hover:text-foreground">
         Forgot your password?
       </Link>
+      <Link href="/signup" className="text-center text-sm text-muted hover:text-foreground">
+        New to Portfolio Analytics? Create an account
+      </Link>
     </form>
   );
 }

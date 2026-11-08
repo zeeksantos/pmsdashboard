@@ -27,3 +27,25 @@ const manilaDateTimeFormatter = new Intl.DateTimeFormat("en-PH", {
 export function formatManilaDateTime(iso: string): string {
   return manilaDateTimeFormatter.format(new Date(iso));
 }
+
+const wholeFormatters = new Map<string, Intl.NumberFormat>();
+
+/** Whole-unit money for analytics (₱12,345). Negative values keep their sign. */
+export function formatMoney(amount: number, currency = "PHP"): string {
+  let f = wholeFormatters.get(currency);
+  if (!f) {
+    f = new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+    });
+    wholeFormatters.set(currency, f);
+  }
+  return f.format(Math.round(amount) === 0 ? 0 : amount);
+}
+
+export function formatPercent(ratio: number | null, digits = 0): string {
+  return ratio == null ? "—" : `${(ratio * 100).toFixed(digits)}%`;
+}

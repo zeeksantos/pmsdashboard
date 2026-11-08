@@ -31,12 +31,19 @@ export async function updateSession(request: NextRequest) {
 
   const isPublicPage =
     request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup") ||
     request.nextUrl.pathname.startsWith("/reset-password");
 
   if (!user && !isPublicPage) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (user && request.nextUrl.pathname.startsWith("/signup")) {
+    const analyticsUrl = request.nextUrl.clone();
+    analyticsUrl.pathname = "/analytics";
+    return NextResponse.redirect(analyticsUrl);
   }
 
   if (user && request.nextUrl.pathname.startsWith("/login")) {

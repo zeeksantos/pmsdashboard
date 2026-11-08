@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Portfolio Analytics uploads channel CSV exports (capped at 8 MB in
+      // the import action; the extra room covers multipart overhead).
+      bodySizeLimit: "9mb",
+    },
+  },
   images: {
     remotePatterns: [
       {

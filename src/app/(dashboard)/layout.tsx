@@ -50,6 +50,11 @@ export default async function DashboardLayout({ children }: LayoutProps<"/">) {
     );
   }
 
+  // Portfolio Analytics customers have no PMS access.
+  if (profile.role === "analytics_only") {
+    redirect("/analytics");
+  }
+
   return (
     <AppShell
       items={navForRole(profile.role)}

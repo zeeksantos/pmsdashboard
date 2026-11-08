@@ -110,6 +110,23 @@ will be on phones, not desks). PWA-installable is a nice-to-have, not MVP-critic
 - Ask clarifying questions about business rules (e.g. how partial payments affect booking
   status, whether cancellations refund automatically) rather than guessing.
 
+## Portfolio Analytics module (`/analytics`)
+
+A separate, multi-tenant product sold to outside Airbnb hosts and property
+managers (white-label). It is NOT part of the single-operator PMS above:
+
+- Tenancy: `workspaces` + `workspace_members`; every `an_*` table has
+  `workspace_id` and RLS limits rows to members. Customers get the
+  `analytics_only` role and can't see PMS data.
+- Data comes from channel CSV exports (Airbnb transaction history,
+  Booking.com / Agoda reservations, or any CSV via column mapping), parsed by
+  `src/lib/analytics/importers.ts` — the same parser runs in the browser
+  preview and again on the server.
+- Every number is computed by `buildPortfolio()` in
+  `src/lib/analytics/metrics.ts` from the same `an_transactions` rows the
+  Transactions page lists. Keep it that way — no stored summaries.
+- `npm test` runs the importer and metrics tests (`tests/*.test.mts`).
+
 ## Project status
 
 No Supabase project is connected yet — schema lives in `supabase/migrations/` as SQL, and
