@@ -86,7 +86,10 @@ export default async function AnalyticsLayout({ children }: { children: React.Re
   ];
   if (workspace.kind === "manager") links.push({ href: "/analytics/owners", label: "Owner statements" });
   links.push({ href: "/analytics/settings", label: "Settings" });
-  if (ws.isPlatformAdmin) links.push({ href: "/analytics/admin", label: "Customers" });
+  if (ws.isPlatformAdmin) {
+    links.push({ href: "/analytics/admin", label: "Customers" });
+    links.push({ href: "/analytics/new", label: "+ New business" });
+  }
 
   let notice: React.ReactNode = null;
   if (license.state === "expired") {
