@@ -27,6 +27,7 @@ export function ImportWizard({ baseCurrency }: { baseCurrency: string }) {
   const [fx, setFx] = useState<Record<string, string>>({});
   const [result, action, pending] = useActionState<ImportResult, FormData>(importExport, { error: null });
   const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
 
   const preview = useMemo(() => {
     if (!text) return null;
@@ -109,9 +110,24 @@ export function ImportWizard({ baseCurrency }: { baseCurrency: string }) {
       }}
       className="flex flex-col gap-5"
     >
-      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface px-4 py-8 text-center hover:border-accent">
+      <label
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f) void pick(f);
+        }}
+        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-surface px-4 py-8 text-center hover:border-accent ${
+          dragging ? "border-accent bg-accent/5" : "border-border"
+        }`}
+      >
         <FileUp className="h-6 w-6 text-muted" />
-        <span className="text-sm font-medium text-foreground">{file ? file.name : "Choose a CSV export"}</span>
+        <span className="text-sm font-medium text-foreground">{file ? file.name : "Choose a CSV export, or drag it here"}</span>
         <span className="text-xs text-muted">Airbnb, Booking.com, Agoda, or any CSV with one row per booking · up to 8 MB</span>
         <input
           ref={inputRef}
@@ -235,6 +251,7 @@ export function ImportWizard({ baseCurrency }: { baseCurrency: string }) {
         <button type="submit" disabled={!preview?.ok || !fxReady || pending} className={primaryButton}>
           {pending ? "Importing…" : "Import"}
         </button>
+        {!file && <span className="self-center text-sm text-muted">Choose a file first.</span>}
         {file && (
           <button type="button" onClick={reset} className={secondaryButton} disabled={pending}>
             Clear
