@@ -32,6 +32,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicPage =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/signup") ||
+    request.nextUrl.pathname.startsWith("/auth/") ||
     request.nextUrl.pathname.startsWith("/reset-password");
 
   if (!user && !isPublicPage) {

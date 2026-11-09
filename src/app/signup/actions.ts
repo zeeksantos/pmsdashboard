@@ -26,7 +26,7 @@ export async function signUp(_prev: SignUpState, fd: FormData): Promise<SignUpSt
       // New accounts get the analytics_only role (no PMS access) — see
       // supabase/migrations/0010_analytics.sql.
       data: { full_name: fullName },
-      emailRedirectTo: origin ? `${origin}/analytics` : undefined,
+      emailRedirectTo: origin ? `${origin}/auth/callback?next=/analytics` : undefined,
     },
   });
   if (error) return { error: error.message };
