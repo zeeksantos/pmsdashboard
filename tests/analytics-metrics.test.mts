@@ -41,28 +41,30 @@ test("month helpers", () => {
   assert.deepEqual(monthRange("2025-11", "2026-02"), ["2025-11", "2025-12", "2026-01", "2026-02"]);
 });
 
-test("a stay crossing a month end is split by nights; payouts are ignored", () => {
+test("revenue lands in the earned month; nights are split across months; payouts are ignored", () => {
   const p = buildPortfolio(
     {
       units: [unit("U1")],
       listings: [{ id: "L1", unit_id: "U1" }],
       transactions: [
-        tx({ kind: "booking", amount_base: 4000, check_in: "2026-01-30", check_out: "2026-02-03", confirmation_code: "A" }),
+        tx({ kind: "booking", amount_base: 4000, txn_date: "2026-01-31", check_in: "2026-01-30", check_out: "2026-02-03", confirmation_code: "A" }),
         tx({ kind: "payout", amount_base: 0, txn_date: "2026-01-31" }),
+        tx({ kind: "booking", amount_base: 3000, txn_date: "2026-02-10", check_in: "2026-02-10", check_out: "2026-02-13", confirmation_code: "B", channel: "booking" }),
       ],
-      recurringCosts: [],
+      fixedCosts: [],
+      monthlyCosts: [],
       expenses: [],
     },
     { from: "2026-01", to: "2026-02" }
   );
   const u = p.units[0];
   assert.equal(u.months["2026-01"].nights, 2);
-  assert.equal(u.months["2026-02"].nights, 2);
-  assert.equal(u.months["2026-01"].stayRevenue, 2000);
-  assert.equal(u.months["2026-02"].stayRevenue, 2000);
+  assert.equal(u.months["2026-02"].nights, 5);
+  assert.equal(u.months["2026-01"].stayRevenue, 4000);
+  assert.equal(u.months["2026-02"].stayRevenue, 3000);
   assert.equal(u.months["2026-01"].stays, 1);
-  assert.equal(u.months["2026-02"].stays, 0);
-  assert.equal(p.totals.netEarnings, 4000);
+  assert.equal(u.months["2026-02"].stays, 1);
+  assert.equal(p.totals.netEarnings, 7000);
   assert.equal(adr(u.totals), 1000);
 });
 
@@ -79,7 +81,8 @@ test("two listings on one unit and a booking + co-host line never double-count n
         tx({ kind: "cohost", amount_base: -600, check_in: "2026-03-01", check_out: "2026-03-04", listing_id: "short", confirmation_code: "A" }),
         tx({ kind: "booking", amount_base: 2000, check_in: "2026-03-03", check_out: "2026-03-05", listing_id: "ltr", confirmation_code: "B" }),
       ],
-      recurringCosts: [],
+      fixedCosts: [],
+      monthlyCosts: [],
       expenses: [],
     },
     { from: "2026-03", to: "2026-03" }
@@ -96,7 +99,8 @@ test("co-host income alone counts as stays (co-host's own export)", () => {
       units: [unit("U1")],
       listings: [{ id: "L1", unit_id: "U1" }],
       transactions: [tx({ kind: "cohost", amount_base: 1500, check_in: "2026-04-10", check_out: "2026-04-13", confirmation_code: "C" })],
-      recurringCosts: [],
+      fixedCosts: [],
+      monthlyCosts: [],
       expenses: [],
     },
     { from: "2026-04", to: "2026-04" }
@@ -118,7 +122,8 @@ test("occupancy counts from the unit's start date; unmapped listings go to 'unas
         tx({ kind: "booking", amount_base: 999, check_in: "2026-06-01", check_out: "2026-06-02", listing_id: "L2" }),
         tx({ kind: "payout", amount_base: 0, txn_date: "2026-06-30" }),
       ],
-      recurringCosts: [],
+      fixedCosts: [],
+      monthlyCosts: [],
       expenses: [],
     },
     { from: "2026-06", to: "2026-06" }
@@ -130,30 +135,33 @@ test("occupancy counts from the unit's start date; unmapped listings go to 'unas
   assert.equal(p.totals.netEarnings, 5999);
 });
 
-test("expenses: recurring costs apply each month in range; one-offs on their month", () => {
+test("expenses: standard bills run from the unit's first month to the last data month", () => {
   const p = buildPortfolio(
     {
       units: [unit("U1")],
       listings: [{ id: "L1", unit_id: "U1" }],
-      transactions: [tx({ kind: "booking", amount_base: 30000, check_in: "2026-01-05", check_out: "2026-01-15", confirmation_code: "A" })],
-      recurringCosts: [
-        { unit_id: "U1", category: "Rent", monthly_amount: 16500, starts_on: "2026-01-01", ends_on: null },
-        { unit_id: "U1", category: "Internet", monthly_amount: 250, starts_on: "2026-02-01", ends_on: "2026-02-28" },
+      transactions: [
+        tx({ kind: "booking", amount_base: 30000, check_in: "2026-02-05", check_out: "2026-02-15", confirmation_code: "A" }),
+        tx({ kind: "payout", amount_base: 0, txn_date: "2026-03-20" }),
       ],
+      fixedCosts: [{ unit_id: "U1", rent: 16500, other_fixed: 0, electricity: 5000, water: 500, cleaning_per_stay: 600 }],
+      monthlyCosts: [{ unit_id: "U1", month: "2026-02-01", cleaning: 1200, other: 300 }],
       expenses: [
-        { unit_id: "U1", category: "Repairs", amount: 1200, spent_on: "2026-01-20" },
-        { unit_id: null, category: "Software", amount: 500, spent_on: "2026-01-02" },
+        { unit_id: "U1", category: "Repairs", amount: 1000, spent_on: "2026-02-20" },
+        { unit_id: null, category: "Software", amount: 500, spent_on: "2026-02-02" },
       ],
     },
-    { from: "2026-01", to: "2026-03" }
+    { from: "2026-01", to: "2026-04" }
   );
   const u = p.units[0];
-  assert.equal(u.months["2026-01"].expenses, 17700);
-  assert.equal(u.months["2026-02"].expenses, 16750);
-  assert.equal(u.months["2026-03"].expenses, 16500);
-  assert.equal(u.months["2026-01"].profit, 12300);
-  assert.equal(p.total["2026-01"].expenses, 18200); // incl. portfolio-wide software
-  assert.equal(u.fixedMonthly, 16500); // as of the last month
+  assert.equal(u.months["2026-01"].expenses, 0); // before the first stay
+  assert.equal(u.months["2026-02"].expenses, 22000 + 1500 + 1000);
+  assert.equal(u.months["2026-03"].expenses, 22000);
+  assert.equal(u.months["2026-04"].expenses, 0); // after the latest data
+  assert.equal(u.months["2026-02"].expensesByCategory["Rent"], 16500);
+  assert.equal(u.months["2026-02"].profit, 30000 - 24500);
+  assert.equal(p.total["2026-02"].expenses, 25000); // incl. portfolio-wide software
+  assert.equal(u.fixedMonthly, 22000);
 });
 
 test("break-even: nights needed at the unit's ADR", () => {
@@ -162,7 +170,8 @@ test("break-even: nights needed at the unit's ADR", () => {
       units: [unit("U1")],
       listings: [{ id: "L1", unit_id: "U1" }],
       transactions: [tx({ kind: "booking", amount_base: 20000, check_in: "2026-01-01", check_out: "2026-01-11", confirmation_code: "A" })],
-      recurringCosts: [{ unit_id: "U1", category: "Rent", monthly_amount: 15000, starts_on: "2026-01-01", ends_on: null }],
+      fixedCosts: [{ unit_id: "U1", rent: 15000, other_fixed: 0, electricity: 0, water: 0, cleaning_per_stay: 0 }],
+      monthlyCosts: [],
       expenses: [],
     },
     { from: "2026-01", to: "2026-01" }
@@ -188,7 +197,8 @@ test("owner statement: fee on positive earnings only, owner gets the rest", () =
         tx({ kind: "adjustment", amount_base: -500, txn_date: "2026-05-10", listing_id: "L2" }),
         tx({ kind: "booking", amount_base: 7777, check_in: "2026-05-01", check_out: "2026-05-02", listing_id: "L3", confirmation_code: "C" }),
       ],
-      recurringCosts: [{ unit_id: "U1", category: "Cleaning", monthly_amount: 1000, starts_on: "2026-05-01", ends_on: null }],
+      fixedCosts: [{ unit_id: "U1", rent: 0, other_fixed: 1000, electricity: 0, water: 0, cleaning_per_stay: 0 }],
+      monthlyCosts: [],
       expenses: [],
     },
     { from: "2026-05", to: "2026-05" }
@@ -227,7 +237,8 @@ test("alerts: occupancy drop, underpricing, unmapped listings, stale data", () =
         { id: "L1b", unit_id: null },
       ],
       transactions,
-      recurringCosts: [],
+      fixedCosts: [],
+      monthlyCosts: [],
       expenses: [],
     },
     { from: "2026-01", to: "2026-04" }

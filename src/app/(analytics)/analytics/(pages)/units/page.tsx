@@ -7,7 +7,6 @@ import { formatMoney, formatPercent } from "@/lib/format";
 import { PageHeader, Card, EmptyState } from "@/components/analytics/PageHeader";
 import { PeriodPicker } from "@/components/analytics/PeriodPicker";
 import { CHANNEL_COLORS } from "@/components/analytics/BarList";
-import { OccupancyHeatmap } from "@/components/analytics/OccupancyHeatmap";
 import { UnitDialog } from "./UnitDialog";
 import { ListingSelect } from "./ListingSelect";
 
@@ -48,7 +47,7 @@ export default async function UnitsPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Units & listings"
+        title="Unit setup"
         description="A unit is a physical place you rent out. Link each channel listing to its unit — a unit can have several (short-stay + long-term, Airbnb + Booking.com)."
         actions={
           <>
@@ -103,12 +102,13 @@ export default async function UnitsPage({
               {rows.map(({ unit, totals }) => {
                 const a = adr(totals);
                 const full = units.find((u) => u.id === unit.id)!;
-                return (
+                                return (
                   <tr key={unit.id} className={`border-b border-border last:border-0 ${unit.archived ? "opacity-60" : ""}`}>
                     <td className="px-4 py-3">
-                      <Link href={`/analytics/units/${unit.id}?period=${period.key}`} className="font-medium text-foreground hover:text-accent">
+                      <Link href={`/analytics?period=${period.key}&tab=buildings&unit=${unit.id}`} className="font-medium text-foreground hover:text-accent">
                         {unit.name}
                       </Link>
+                      {full.nickname && <span className="ml-2 text-muted">{full.nickname}</span>}
                       <div className="text-xs text-muted">
                         {[unit.building, unit.area].filter(Boolean).join(" · ") || "—"}
                         {" · "}
@@ -137,8 +137,6 @@ export default async function UnitsPage({
           </table>
         </div>
       )}
-
-      <OccupancyHeatmap p={p} />
 
       {listings.length > unlinked.length && (
         <details className="rounded-xl border border-border bg-surface p-4">

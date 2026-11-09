@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireEditableWorkspace } from "@/lib/analytics/workspace";
 import { refreshUnitStartDates } from "@/lib/analytics/units";
-import { EXPENSE_CATEGORIES } from "@/lib/analytics/categories";
 
 export interface UnitFormState {
   error: string | null;
@@ -33,6 +32,7 @@ export async function saveUnit(unitId: string | null, _prev: UnitFormState, fd: 
 
   const values = {
     name,
+    nickname: text(fd, "nickname", 80),
     building: text(fd, "building"),
     area: text(fd, "area"),
     owner_id: text(fd, "owner_id", 40),
@@ -92,50 +92,5 @@ export async function linkListing(listingId: string, target: string) {
   if (error) throw new Error(error.message);
 
   if (unitId) await refreshUnitStartDates(supabase, workspaceId, [unitId]);
-  revalidatePath("/analytics", "layout");
-}
-
-export async function addRecurringCost(unitId: string, _prev: UnitFormState, fd: FormData): Promise<UnitFormState> {
-  let ws;
-  try {
-    ws = await requireEditableWorkspace();
-  } catch (e) {
-    return { error: (e as Error).message };
-  }
-  const category = String(fd.get("category") ?? "");
-  if (!(EXPENSE_CATEGORIES as readonly string[]).includes(category)) return { error: "Pick a category." };
-  const amount = Number(fd.get("monthly_amount"));
-  if (!Number.isFinite(amount) || amount < 0) return { error: "Enter the monthly amount." };
-  const startMonth = String(fd.get("starts_on") ?? "");
-  const endMonth = String(fd.get("ends_on") ?? "");
-  if (!/^\d{4}-\d{2}$/.test(startMonth)) return { error: "Pick the first month this cost applies." };
-  if (endMonth && (!/^\d{4}-\d{2}$/.test(endMonth) || endMonth < startMonth)) {
-    return { error: "The last month must be on or after the first month." };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("an_recurring_costs").insert({
-    workspace_id: ws.workspace.id,
-    unit_id: unitId,
-    category,
-    monthly_amount: amount,
-    starts_on: `${startMonth}-01`,
-    ends_on: endMonth ? `${endMonth}-01` : null,
-    notes: text(fd, "notes", 300),
-  });
-  if (error) return { error: error.message };
-  revalidatePath("/analytics", "layout");
-  return { error: null, ok: true };
-}
-
-export async function deleteRecurringCost(costId: string) {
-  const ws = await requireEditableWorkspace();
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("an_recurring_costs")
-    .delete()
-    .eq("id", costId)
-    .eq("workspace_id", ws.workspace.id);
-  if (error) throw new Error(error.message);
   revalidatePath("/analytics", "layout");
 }

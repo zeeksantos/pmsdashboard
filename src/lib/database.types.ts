@@ -225,6 +225,7 @@ export type AnUnit = {
   area: string | null;
   active_from: string | null;
   archived: boolean;
+  nickname: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -269,6 +270,7 @@ export type AnTransaction = {
   check_in: string | null;
   check_out: string | null;
   nights: number | null;
+  booked_on: string | null;
   currency: string;
   amount: number;
   fx_rate: number;
@@ -283,16 +285,24 @@ export type AnTransaction = {
   created_at: string;
 };
 
-export type AnRecurringCost = {
-  id: string;
-  workspace_id: string;
+export type AnUnitCosts = {
   unit_id: string;
-  category: string;
-  monthly_amount: number;
-  starts_on: string;
-  ends_on: string | null;
-  notes: string | null;
-  created_at: string;
+  workspace_id: string;
+  rent: number;
+  other_fixed: number;
+  electricity: number;
+  water: number;
+  cleaning_per_stay: number;
+  updated_at: string;
+};
+
+export type AnMonthlyCosts = {
+  unit_id: string;
+  workspace_id: string;
+  month: string;
+  cleaning: number;
+  other: number;
+  updated_at: string;
 };
 
 export type AnExpense = {
@@ -407,10 +417,8 @@ export type Database = {
         AnTransaction,
         "workspace_id" | "import_id" | "channel" | "kind" | "txn_date" | "currency" | "dedupe_key"
       >;
-      an_recurring_costs: AnTable<
-        AnRecurringCost,
-        "workspace_id" | "unit_id" | "category" | "monthly_amount" | "starts_on"
-      >;
+      an_unit_costs: AnTable<AnUnitCosts, "unit_id" | "workspace_id">;
+      an_monthly_costs: AnTable<AnMonthlyCosts, "unit_id" | "workspace_id" | "month">;
       an_expenses: AnTable<AnExpense, "workspace_id" | "category" | "amount" | "spent_on">;
     };
     Views: Record<string, never>;

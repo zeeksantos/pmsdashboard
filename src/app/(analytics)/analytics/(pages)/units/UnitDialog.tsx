@@ -31,6 +31,9 @@ export function UnitDialog({ unit, owners, showOwners }: { unit?: AnUnit; owners
           <Field label="Unit name" hint="What you call the physical unit, e.g. 908C or Villa 2.">
             <input name="name" defaultValue={unit?.name} required maxLength={80} className={inputClass} />
           </Field>
+          <Field label="Nickname" hint="Optional short name shown under the unit on the dashboard, e.g. Corner studio.">
+            <input name="nickname" defaultValue={unit?.nickname ?? ""} maxLength={80} className={inputClass} />
+          </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Building / property">
               <input name="building" defaultValue={unit?.building ?? ""} className={inputClass} placeholder="Mplace Tower C" />

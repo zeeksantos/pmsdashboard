@@ -8,7 +8,7 @@ const STYLE = {
   info: { Icon: Info, label: "Info", cls: "text-accent" },
 } as const;
 
-export function AlertList({ alerts }: { alerts: Alert[] }) {
+export function AlertList({ alerts, onUnit }: { alerts: Alert[]; onUnit?: (unitId: string) => void }) {
   return (
     <ul className="flex flex-col divide-y divide-border">
       {alerts.map((a) => {
@@ -19,8 +19,12 @@ export function AlertList({ alerts }: { alerts: Alert[] }) {
             <div className="min-w-0">
               <div className="text-sm font-medium text-foreground">
                 <span className={`mr-2 text-xs font-semibold uppercase ${cls}`}>{label}</span>
-                {a.unitId ? (
-                  <Link href={`/analytics/units/${a.unitId}`} className="hover:text-accent">
+                {a.unitId && onUnit ? (
+                  <button type="button" onClick={() => onUnit(a.unitId!)} className="text-left font-medium hover:text-accent">
+                    {a.title}
+                  </button>
+                ) : a.unitId ? (
+                  <Link href={`/analytics?tab=buildings&unit=${a.unitId}`} className="hover:text-accent">
                     {a.title}
                   </Link>
                 ) : (

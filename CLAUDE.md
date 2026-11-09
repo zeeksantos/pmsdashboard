@@ -122,9 +122,12 @@ managers (white-label). It is NOT part of the single-operator PMS above:
   Booking.com / Agoda reservations, or any CSV via column mapping), parsed by
   `src/lib/analytics/importers.ts` — the same parser runs in the browser
   preview and again on the server.
-- Every number is computed by `buildPortfolio()` in
-  `src/lib/analytics/metrics.ts` from the same `an_transactions` rows the
-  Transactions page lists. Keep it that way — no stored summaries.
+- The dashboard (`/analytics`, tabs mirroring the original Airbnb portfolio
+  dashboard) is computed by `buildReport()` in `src/lib/analytics/report.ts`;
+  alerts and owner statements by `buildPortfolio()` in `metrics.ts`. Both read
+  the same `an_transactions` rows the All transactions tab lists, plus
+  `an_unit_costs` (standard monthly bills) and `an_monthly_costs` (per-month
+  cleaning/other). Keep it that way — no stored summaries.
 - `npm test` runs the importer and metrics tests (`tests/*.test.mts`).
 
 ## Project status

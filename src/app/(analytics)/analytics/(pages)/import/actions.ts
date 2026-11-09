@@ -154,6 +154,7 @@ export async function importExport(_prev: ImportResult, formData: FormData): Pro
         check_in: r.checkIn,
         check_out: r.checkOut,
         nights: r.nights,
+        booked_on: r.bookedOn,
         currency: r.currency,
         amount: r.amount,
         fx_rate: rate,

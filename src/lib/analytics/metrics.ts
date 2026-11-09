@@ -5,9 +5,9 @@
 // Accounting rules
 // - Earnings = sum of transaction amounts (in the workspace's base currency)
 //   except payouts, which are bank transfers of money already counted.
-// - Stay-linked lines (bookings, co-host payouts, adjustments, resolutions)
-//   are spread evenly over the stay's nights, so a stay crossing a month end
-//   is split between both months. Everything else lands on its txn date.
+// - Money lands in the month it was earned: the Airbnb transaction date (the
+//   payout, the day after check-in) or, for Booking.com / Agoda reservation
+//   rows, the check-in date. Stays are counted in that same month.
 // - Stay revenue = bookings + co-host payouts. A co-host's export has only
 //   "Co-Host payout" lines for the stays they manage (that's their income);
 //   a host who pays a co-host sees a negative one, so stay revenue is what
@@ -58,12 +58,34 @@ export interface ListingInput {
   unit_id: string | null;
 }
 
-export interface RecurringCostInput {
+/** A unit's standard monthly bills (an_unit_costs). */
+export interface FixedCostInput {
   unit_id: string;
-  category: string;
-  monthly_amount: number;
-  starts_on: string;
-  ends_on: string | null;
+  rent: number;
+  other_fixed: number;
+  electricity: number;
+  water: number;
+  cleaning_per_stay: number;
+}
+
+/** Actual cleaning / other bills for one unit in one month (an_monthly_costs). */
+export interface MonthlyCostInput {
+  unit_id: string;
+  month: string; // YYYY-MM-01
+  cleaning: number;
+  other: number;
+}
+
+export const FIXED_CATEGORIES = [
+  ["rent", "Rent"],
+  ["other_fixed", "Other fixed"],
+  ["electricity", "Electricity"],
+  ["water", "Water"],
+] as const;
+
+export function fixedMonthlyTotal(c: FixedCostInput | undefined): number {
+  if (!c) return 0;
+  return Number(c.rent) + Number(c.other_fixed) + Number(c.electricity) + Number(c.water);
 }
 
 export interface ExpenseInput {
@@ -193,7 +215,6 @@ function daysBetweenInclusive(a: string, b: string): number {
   return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86_400_000) + 1;
 }
 
-const STAY_SPREAD_KINDS = new Set<Kind>(["booking", "cohost", "adjustment", "resolution"]);
 const STAY_KINDS = new Set<Kind>(["booking", "cohost"]);
 
 // ── main ─────────────────────────────────────────────────────────────────
@@ -208,7 +229,8 @@ export function buildPortfolio(
     transactions: TxnInput[];
     units: UnitInput[];
     listings: ListingInput[];
-    recurringCosts: RecurringCostInput[];
+    fixedCosts: FixedCostInput[];
+    monthlyCosts: MonthlyCostInput[];
     expenses: ExpenseInput[];
   },
   { from, to }: BuildOptions
@@ -254,44 +276,24 @@ export function buildPortfolio(
       if (!unitLastNight.has(unitId) || last > unitLastNight.get(unitId)!) unitLastNight.set(unitId, last);
     }
 
-    const spread =
-      STAY_SPREAD_KINDS.has(t.kind) && t.check_in && t.check_out && t.check_out > t.check_in;
-    if (spread) {
-      // Spread evenly over the stay's nights, grouped by month.
-      const perMonth = new Map<string, number>();
-      let total = 0;
-      for (let d = t.check_in!; d < t.check_out!; d = addDays(d, 1)) {
-        const mo = monthOf(d);
-        perMonth.set(mo, (perMonth.get(mo) ?? 0) + 1);
-        total++;
+    // Money lands in the month it was earned: Airbnb's transaction date
+    // (the payout, the day after check-in), or check-in for channels whose
+    // rows are reservations — the same months Airbnb's earnings report uses.
+    const revenueDate = t.channel === "airbnb" ? t.txn_date : t.check_in ?? t.txn_date;
+    const bucket = bucketFor(unitId, monthOf(revenueDate));
+    if (STAY_KINDS.has(t.kind) && t.check_in) {
+      const stayKey = `${unitId ?? "-"}|${t.confirmation_code ?? t.id}`;
+      if (!staysCounted.has(stayKey)) {
+        staysCounted.add(stayKey);
+        if (bucket) bucket.stays += 1;
       }
-      for (const [mo, n] of perMonth) {
-        const share = (amount * n) / total;
-        const bucket = bucketFor(unitId, mo);
-        if (!bucket) continue;
-        if (STAY_KINDS.has(t.kind)) bucket.stayRevenue += share;
-        else bucket.otherRevenue += share;
-        bucket.netEarnings += share;
-        byChannel[t.channel] = (byChannel[t.channel] ?? 0) + share;
-        byKind[t.kind] = (byKind[t.kind] ?? 0) + share;
-      }
-      if (STAY_KINDS.has(t.kind)) {
-        const stayKey = `${unitId ?? "-"}|${t.confirmation_code ?? t.id}`;
-        if (!staysCounted.has(stayKey)) {
-          staysCounted.add(stayKey);
-          const b = bucketFor(unitId, monthOf(t.check_in!));
-          if (b) b.stays += 1;
-        }
-      }
-    } else {
-      const bucket = bucketFor(unitId, monthOf(t.txn_date));
-      if (!bucket) continue;
-      if (STAY_KINDS.has(t.kind)) bucket.stayRevenue += amount;
-      else bucket.otherRevenue += amount;
-      bucket.netEarnings += amount;
-      byChannel[t.channel] = (byChannel[t.channel] ?? 0) + amount;
-      byKind[t.kind] = (byKind[t.kind] ?? 0) + amount;
     }
+    if (!bucket) continue;
+    if (STAY_KINDS.has(t.kind)) bucket.stayRevenue += amount;
+    else bucket.otherRevenue += amount;
+    bucket.netEarnings += amount;
+    byChannel[t.channel] = (byChannel[t.channel] ?? 0) + amount;
+    byKind[t.kind] = (byKind[t.kind] ?? 0) + amount;
   }
 
   // Nights and available nights per unit-month.
@@ -325,12 +327,22 @@ export function buildPortfolio(
       portfolioExpenses[mo] += amount;
     }
   };
-  for (const c of input.recurringCosts) {
-    const first = monthOf(c.starts_on);
-    const last = c.ends_on ? monthOf(c.ends_on) : months[months.length - 1];
+  // Standard bills run from the unit's first month to the latest month
+  // with data; actual cleaning/other bills land on their month.
+  const lastDataMonth = dataEnd ? monthOf(dataEnd) : months[months.length - 1];
+  const fixedByUnit = new Map(input.fixedCosts.map((c) => [c.unit_id, c]));
+  for (const u of input.units) {
+    const c = fixedByUnit.get(u.id);
+    const start = u.active_from ?? unitFirstNight.get(u.id);
+    if (!c || !start) continue;
     for (const mo of months) {
-      if (mo >= first && mo <= last) addExpense(c.unit_id, mo, c.category, Number(c.monthly_amount));
+      if (mo < monthOf(start) || mo > lastDataMonth) continue;
+      for (const [key, label] of FIXED_CATEGORIES) addExpense(u.id, mo, label, Number(c[key]));
     }
+  }
+  for (const m of input.monthlyCosts) {
+    addExpense(m.unit_id, monthOf(m.month), "Cleaning", Number(m.cleaning));
+    addExpense(m.unit_id, monthOf(m.month), "Other", Number(m.other));
   }
   for (const e of input.expenses) addExpense(e.unit_id, monthOf(e.spent_on), e.category, Number(e.amount));
 
@@ -342,15 +354,7 @@ export function buildPortfolio(
       stats[mo].profit = stats[mo].netEarnings - stats[mo].expenses;
       addInto(totals, stats[mo]);
     }
-    const lastMonth = months[months.length - 1];
-    const fixedMonthly = input.recurringCosts
-      .filter(
-        (c) =>
-          c.unit_id === u.id &&
-          monthOf(c.starts_on) <= lastMonth &&
-          (!c.ends_on || monthOf(c.ends_on) >= lastMonth)
-      )
-      .reduce((s, c) => s + Number(c.monthly_amount), 0);
+    const fixedMonthly = fixedMonthlyTotal(fixedByUnit.get(u.id));
     return {
       unit: u,
       months: stats,

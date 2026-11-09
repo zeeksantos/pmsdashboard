@@ -50,6 +50,8 @@ export interface NormalizedTxn {
   checkIn: string | null;
   checkOut: string | null;
   nights: number | null;
+  /** When the guest made the booking (lead time). */
+  bookedOn: string | null;
   currency: string;
   /** Host earnings for this line, in `currency`. 0 for payouts. */
   amount: number;
@@ -440,6 +442,7 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
         checkIn,
         checkOut,
         nights,
+        bookedOn: parseDate(get(r, "bookedOn"), dayFirst),
         currency,
         amount,
         gross: parseMoney(get(r, "gross"))?.value ?? null,
@@ -489,11 +492,13 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
       const stayNights = nightsBetween(checkIn, checkOut);
       const code = cleanText(get(r, "code"));
       const listing = cleanText(get(r, "listing")) ?? cleanText(options.defaultListing) ?? "Unassigned listing";
+      const bookedOn = parseDate(get(r, "bookedOn"), dayFirst);
       const row = {
         channel,
         kind: "booking" as const,
         rawType: status,
-        date: parseDate(get(r, "bookedOn"), dayFirst) ?? checkIn,
+        date: bookedOn ?? checkIn,
+        bookedOn,
         code,
         guest: cleanText(get(r, "guest")),
         listing,

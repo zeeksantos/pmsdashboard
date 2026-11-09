@@ -1,11 +1,22 @@
-// Server-side loaders for analytics pages. Every page builds its numbers
-// from loadPortfolio(), i.e. the same an_transactions rows the Transactions
-// page lists — there is no separate summary table to drift out of sync.
+// Server-side loaders for analytics pages. Every number is built from the
+// same an_transactions rows the All transactions tab lists — there is no
+// separate summary table to drift out of sync.
 
 import { createClient } from "@/lib/supabase/server";
-import { getManilaToday } from "@/lib/calendar";
-import type { AnListing, AnOwner, AnUnit } from "@/lib/database.types";
-import { buildPortfolio, monthEnd, monthRange, shiftMonth, type Portfolio, type TxnInput } from "./metrics";
+import { getManilaToday, toManilaDateString } from "@/lib/calendar";
+import { formatMoney } from "@/lib/format";
+import type { AnExpense, AnListing, AnOwner, AnUnit } from "@/lib/database.types";
+import {
+  buildPortfolio,
+  monthEnd,
+  monthRange,
+  shiftMonth,
+  type FixedCostInput,
+  type MonthlyCostInput,
+  type Portfolio,
+  type TxnInput,
+} from "./metrics";
+import { buildReport, type Report, type ReportTxn } from "./report";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -54,69 +65,161 @@ export function periodOptions(today = getManilaToday()): { key: string; label: s
   ];
 }
 
-export interface PortfolioData {
-  portfolio: Portfolio;
+interface Base {
   units: AnUnit[];
   listings: AnListing[];
   owners: AnOwner[];
+  fixedCosts: FixedCostInput[];
+  monthlyCosts: MonthlyCostInput[];
+  expenses: AnExpense[];
   lastImportAt: string | null;
 }
 
-export async function loadPortfolio(workspaceId: string, period: Pick<Period, "from" | "to">, supabase?: Client): Promise<PortfolioData> {
-  const db = supabase ?? (await createClient());
+async function loadBase(db: Client, workspaceId: string, period: Pick<Period, "from" | "to">): Promise<Base> {
   const rangeStart = `${period.from}-01`;
   const rangeEnd = monthEnd(period.to);
-
-  const [units, listings, owners, recurring, expenses, lastImport, transactions] = await Promise.all([
+  const [units, listings, owners, fixed, monthly, expenses, lastImport] = await Promise.all([
     fetchAll<AnUnit>((a, b) => db.from("an_units").select("*").eq("workspace_id", workspaceId).order("name").range(a, b)),
-    fetchAll<AnListing>((a, b) => db.from("an_listings").select("*").eq("workspace_id", workspaceId).order("external_name").range(a, b)),
+    fetchAll<AnListing>((a, b) =>
+      db.from("an_listings").select("*").eq("workspace_id", workspaceId).order("external_name").range(a, b)
+    ),
     fetchAll<AnOwner>((a, b) => db.from("an_owners").select("*").eq("workspace_id", workspaceId).order("name").range(a, b)),
     fetchAll((a, b) =>
       db
-        .from("an_recurring_costs")
-        .select("unit_id, category, monthly_amount, starts_on, ends_on")
+        .from("an_unit_costs")
+        .select("unit_id, rent, other_fixed, electricity, water, cleaning_per_stay")
         .eq("workspace_id", workspaceId)
-        .lte("starts_on", rangeEnd)
-        .or(`ends_on.is.null,ends_on.gte.${rangeStart}`)
         .range(a, b)
     ),
     fetchAll((a, b) =>
       db
+        .from("an_monthly_costs")
+        .select("unit_id, month, cleaning, other")
+        .eq("workspace_id", workspaceId)
+        .gte("month", rangeStart)
+        .lte("month", rangeEnd)
+        .range(a, b)
+    ),
+    fetchAll<AnExpense>((a, b) =>
+      db
         .from("an_expenses")
-        .select("unit_id, category, amount, spent_on")
+        .select("*")
         .eq("workspace_id", workspaceId)
         .gte("spent_on", rangeStart)
         .lte("spent_on", rangeEnd)
         .range(a, b)
     ),
     db.from("an_imports").select("created_at").eq("workspace_id", workspaceId).order("created_at", { ascending: false }).limit(1),
-    // Rows whose stay or date touches the period (stays crossing the edges
-    // are included and split by metrics).
-    fetchAll<TxnInput>((a, b) =>
+  ]);
+  const num = (v: unknown) => Number(v ?? 0);
+  return {
+    units,
+    listings,
+    owners,
+    fixedCosts: fixed.map((c) => ({
+      unit_id: c.unit_id,
+      rent: num(c.rent),
+      other_fixed: num(c.other_fixed),
+      electricity: num(c.electricity),
+      water: num(c.water),
+      cleaning_per_stay: num(c.cleaning_per_stay),
+    })),
+    monthlyCosts: monthly.map((m) => ({ unit_id: m.unit_id, month: m.month, cleaning: num(m.cleaning), other: num(m.other) })),
+    expenses: expenses.map((e) => ({ ...e, amount: num(e.amount) })),
+    lastImportAt: lastImport.data?.[0]?.created_at ?? null,
+  };
+}
+
+/** Transactions whose date or stay touches the period. */
+function periodTxnFilter(period: Pick<Period, "from" | "to">) {
+  const rangeStart = `${period.from}-01`;
+  const rangeEnd = monthEnd(period.to);
+  return {
+    afterStart: `check_out.gt.${rangeStart},txn_date.gte.${rangeStart}`,
+    beforeEnd: `check_in.lte.${rangeEnd},txn_date.lte.${rangeEnd}`,
+  };
+}
+
+export interface PortfolioData extends Base {
+  portfolio: Portfolio;
+}
+
+export async function loadPortfolio(workspaceId: string, period: Pick<Period, "from" | "to">, supabase?: Client): Promise<PortfolioData> {
+  const db = supabase ?? (await createClient());
+  const f = periodTxnFilter(period);
+  const [b, transactions] = await Promise.all([
+    loadBase(db, workspaceId, period),
+    fetchAll<TxnInput>((a, z) =>
       db
         .from("an_transactions")
         .select("id, kind, channel, txn_date, check_in, check_out, amount_base, listing_id, confirmation_code")
         .eq("workspace_id", workspaceId)
-        .or(`check_out.gt.${rangeStart},and(check_out.is.null,txn_date.gte.${rangeStart})`)
-        .or(`check_in.lte.${rangeEnd},and(check_in.is.null,txn_date.lte.${rangeEnd})`)
+        .or(f.afterStart)
+        .or(f.beforeEnd)
         .order("id")
-        .range(a, b)
+        .range(a, z)
     ),
   ]);
-
   const portfolio = buildPortfolio(
     {
       transactions: transactions.map((t) => ({ ...t, amount_base: Number(t.amount_base) })),
-      units,
-      listings,
-      recurringCosts: recurring.map((r) => ({ ...r, monthly_amount: Number(r.monthly_amount) })),
-      expenses: expenses.map((e) => ({ ...e, amount: Number(e.amount) })),
+      units: b.units,
+      listings: b.listings,
+      fixedCosts: b.fixedCosts,
+      monthlyCosts: b.monthlyCosts,
+      expenses: b.expenses,
     },
     period
   );
+  return { ...b, portfolio };
+}
 
-  const lastImportAt = lastImport.data?.[0]?.created_at ?? null;
-  return { portfolio, units, listings, owners, lastImportAt };
+export interface ReportData extends Base {
+  report: Report;
+}
+
+export async function loadReport(workspaceId: string, period: Pick<Period, "from" | "to">, currency: string): Promise<ReportData> {
+  const db = await createClient();
+  const f = periodTxnFilter(period);
+  const [b, transactions] = await Promise.all([
+    loadBase(db, workspaceId, period),
+    fetchAll<ReportTxn>((a, z) =>
+      db
+        .from("an_transactions")
+        .select(
+          "id, kind, raw_type, channel, txn_date, booked_on, confirmation_code, guest_name, check_in, check_out, nights, currency, amount, fx_rate, amount_base, gross, service_fee, cleaning_fee, paid_out, details, listing_id"
+        )
+        .eq("workspace_id", workspaceId)
+        .or(f.afterStart)
+        .or(f.beforeEnd)
+        .order("id")
+        .range(a, z)
+    ),
+  ]);
+  const num = (v: unknown) => (v == null ? null : Number(v));
+  const report = buildReport({
+    transactions: transactions.map((t) => ({
+      ...t,
+      amount: Number(t.amount),
+      fx_rate: Number(t.fx_rate),
+      amount_base: Number(t.amount_base),
+      gross: num(t.gross),
+      service_fee: num(t.service_fee),
+      cleaning_fee: num(t.cleaning_fee),
+      paid_out: num(t.paid_out),
+    })),
+    units: b.units,
+    listings: b.listings,
+    fixedCosts: b.fixedCosts,
+    monthlyCosts: b.monthlyCosts,
+    expenses: b.expenses,
+    from: period.from,
+    to: period.to,
+    today: getManilaToday(),
+    lastImportAt: b.lastImportAt ? toManilaDateString(b.lastImportAt) : null,
+    formatMoney: (n) => formatMoney(n, currency),
+  });
+  return { ...b, report };
 }
 
 export { monthRange };

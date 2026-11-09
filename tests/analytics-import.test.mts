@@ -64,6 +64,7 @@ test("Airbnb transaction history: detected and normalised", () => {
   assert.equal(booking.serviceFee, 703.69);
   assert.equal(booking.cleaningFee, 499);
   assert.equal(booking.gross, 20867.15);
+  assert.equal(booking.bookedOn, "2026-08-20");
 
   const payout = r.rows[0];
   assert.equal(payout.amount, 0);
@@ -111,6 +112,7 @@ test("Booking.com reservations export: net = price − commission, cancellations
   assert.equal(r.rows[0].nights, 2);
   assert.equal(r.rows[0].listing, "Deluxe Studio");
   assert.equal(r.rows[0].date, "2026-09-20");
+  assert.equal(r.rows[0].bookedOn, "2026-09-20");
   assert.equal(r.rows[0].currency, "PHP");
   assert.deepEqual(r.skipped, [{ reason: "Cancelled / no-show (not counted)", count: 1 }]);
 });
