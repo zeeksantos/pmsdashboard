@@ -92,7 +92,10 @@ export default async function ImportPage() {
                     <td className="max-w-[220px] truncate py-2 text-foreground" title={i.file_name}>
                       {i.file_name}
                     </td>
-                    <td className="py-2">{CHANNEL_LABELS[i.channel]}</td>
+                    <td className="py-2">
+                      {CHANNEL_LABELS[i.channel]}
+                      {i.pending && <span className="ml-1 text-xs text-muted">(upcoming)</span>}
+                    </td>
                     <td className="py-2 text-muted">
                       {i.period_start ? `${i.period_start} → ${i.period_end}` : "—"}
                     </td>

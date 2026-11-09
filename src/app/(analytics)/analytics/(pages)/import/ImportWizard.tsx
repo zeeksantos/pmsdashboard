@@ -60,13 +60,23 @@ export function ImportWizard({ baseCurrency }: { baseCurrency: string }) {
     return (
       <div className="rounded-xl border border-success/30 bg-success/10 p-5">
         <div className="flex items-center gap-2 font-medium text-success">
-          <CheckCircle2 className="h-5 w-5" /> {result.channel} export imported
+          <CheckCircle2 className="h-5 w-5" /> {result.channel} {result.pending ? "upcoming bookings" : "export"} imported
         </div>
         <ul className="mt-3 space-y-1 text-sm text-foreground">
-          <li>{result.inserted} new rows added</li>
+          {result.pending ? (
+            <>
+              <li>{result.inserted} upcoming bookings saved — they show on the Upcoming tab, not in your earnings</li>
+              {!!result.alreadyPaid && <li>{result.alreadyPaid} already paid out, so they&apos;re left in your earnings instead</li>}
+            </>
+          ) : (
+            <>
+              <li>{result.inserted} new rows added</li>
+              {!!result.replaced && <li>{result.replaced} upcoming bookings have now paid out and moved into your earnings</li>}
+            </>
+          )}
           {!!result.updated && <li>{result.updated} existing bookings updated with the latest amounts</li>}
           {!!result.duplicates && <li>{result.duplicates} rows were already imported and skipped</li>}
-          {!!result.skipped && <li>{result.skipped} rows ignored (cancelled, blank or unreadable)</li>}
+          {!!result.skipped && !result.pending && <li>{result.skipped} rows ignored (cancelled, blank or unreadable)</li>}
           {!!result.newListings && <li>{result.newListings} new listings found</li>}
         </ul>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -75,8 +85,8 @@ export function ImportWizard({ baseCurrency }: { baseCurrency: string }) {
               Link {result.unmappedListings} listing{result.unmappedListings === 1 ? "" : "s"} to units
             </Link>
           ) : (
-            <Link href="/analytics" className={primaryButton}>
-              See your dashboard
+            <Link href={result.pending ? "/analytics?tab=upcoming" : "/analytics"} className={primaryButton}>
+              {result.pending ? "See upcoming bookings" : "See your dashboard"}
             </Link>
           )}
           <button type="button" onClick={() => window.location.reload()} className={secondaryButton}>
@@ -170,6 +180,13 @@ export function ImportWizard({ baseCurrency }: { baseCurrency: string }) {
               </span>
             )}
           </div>
+          {preview.pending && (
+            <p className="mt-2 rounded-lg bg-accent/10 px-3 py-2 text-foreground">
+              This is Airbnb&apos;s <b>pending</b> export: bookings that haven&apos;t paid out yet. They&apos;ll show on the Upcoming tab and
+              stay out of your earnings until you upload the Transaction history that includes their payout. Uploading it replaces your
+              previous upcoming list for these listings.
+            </p>
+          )}
           <ul className="mt-2 space-y-1 text-muted">
             <li>
               {preview.listings.length} listing{preview.listings.length === 1 ? "" : "s"}:{" "}

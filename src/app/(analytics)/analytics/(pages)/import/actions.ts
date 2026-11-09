@@ -27,6 +27,12 @@ export interface ImportResult {
   skipped?: number;
   newListings?: number;
   unmappedListings?: number;
+  /** An upcoming-bookings (pending) file. */
+  pending?: boolean;
+  /** Pending bookings replaced by their paid line, or by a newer pending file. */
+  replaced?: number;
+  /** Pending rows left out because that booking has already paid out. */
+  alreadyPaid?: number;
 }
 
 function chunks<T>(arr: T[], size: number): T[][] {
@@ -94,6 +100,7 @@ export async function importExport(_prev: ImportResult, formData: FormData): Pro
       period_start: parsed.periodStart,
       period_end: parsed.periodEnd,
       fx_rates: rates,
+      pending: parsed.pending,
       created_by: ws.userId,
     })
     .select("id")
@@ -166,15 +173,55 @@ export async function importExport(_prev: ImportResult, formData: FormData): Pro
         paid_out: r.paidOut,
         details: r.details,
         dedupe_key: r.dedupeKey,
+        pending: parsed.pending,
       };
     };
+    const STAY_KINDS = new Set(["booking", "cohost"]);
+    const codesIn = (rows: typeof parsed.rows) =>
+      [...new Set(rows.filter((r) => STAY_KINDS.has(r.kind) && r.code).map((r) => r.code!))];
+
+    let replaced = 0;
+    let alreadyPaid = 0;
+    let rowsToLoad = parsed.rows;
+    if (parsed.pending) {
+      // A newer pending file is the full list of what's still coming for its
+      // listings: drop the older pending rows for those listings first, so
+      // cancelled bookings disappear.
+      const listingIds = [...new Set(parsed.rows.map((r) => (r.listing ? listingByName.get(r.listing)?.id : null)).filter(Boolean))] as string[];
+      for (const part of chunks(listingIds, 200)) {
+        const { data, error } = await supabase
+          .from("an_transactions")
+          .delete()
+          .eq("workspace_id", workspaceId)
+          .eq("pending", true)
+          .in("listing_id", part)
+          .select("id");
+        if (error) throw new Error(error.message);
+        replaced += data?.length ?? 0;
+      }
+      // Bookings that already paid out are earnings now — don't list them again.
+      const paid = new Set<string>();
+      for (const part of chunks(codesIn(parsed.rows), 200)) {
+        const { data, error } = await supabase
+          .from("an_transactions")
+          .select("confirmation_code")
+          .eq("workspace_id", workspaceId)
+          .eq("pending", false)
+          .in("confirmation_code", part);
+        if (error) throw new Error(error.message);
+        for (const d of data ?? []) if (d.confirmation_code) paid.add(d.confirmation_code);
+      }
+      rowsToLoad = parsed.rows.filter((r) => !(r.code && paid.has(r.code)));
+      alreadyPaid = parsed.rows.length - rowsToLoad.length;
+      existing.clear();
+    }
 
     // Airbnb rows are an immutable ledger: skip ones we already have.
     // Booking.com / Agoda rows are reservations: a newer export updates
     // the price/status of the same booking.
     const isLedger = parsed.channel === "airbnb";
-    const fresh = parsed.rows.filter((r) => !existing.has(r.dedupeKey));
-    const repeat = parsed.rows.filter((r) => existing.has(r.dedupeKey));
+    const fresh = rowsToLoad.filter((r) => !existing.has(r.dedupeKey));
+    const repeat = rowsToLoad.filter((r) => existing.has(r.dedupeKey));
 
     for (const part of chunks(fresh.map(toRow), CHUNK)) {
       const { error } = await supabase
@@ -191,7 +238,22 @@ export async function importExport(_prev: ImportResult, formData: FormData): Pro
       updated = repeat.length;
     }
 
-    const skipped = parsed.skipped.reduce((s, x) => s + x.count, 0);
+    // Paid lines replace the pending versions of the same bookings.
+    if (!parsed.pending) {
+      for (const part of chunks(codesIn(parsed.rows), 200)) {
+        const { data, error } = await supabase
+          .from("an_transactions")
+          .delete()
+          .eq("workspace_id", workspaceId)
+          .eq("pending", true)
+          .in("confirmation_code", part)
+          .select("id");
+        if (error) throw new Error(error.message);
+        replaced += data?.length ?? 0;
+      }
+    }
+
+    const skipped = parsed.skipped.reduce((s, x) => s + x.count, 0) + alreadyPaid;
     await supabase
       .from("an_imports")
       .update({
@@ -216,6 +278,9 @@ export async function importExport(_prev: ImportResult, formData: FormData): Pro
       skipped,
       newListings: Math.max(0, after - beforeCount),
       unmappedListings: (allListings ?? []).filter((l) => !l.unit_id).length,
+      pending: parsed.pending,
+      replaced,
+      alreadyPaid,
     };
   } catch (e) {
     // Don't leave a half-finished import behind.

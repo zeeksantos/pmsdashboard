@@ -1,4 +1,5 @@
 import type { Report } from "@/lib/analytics/report";
+import type { Upcoming } from "@/lib/analytics/upcoming";
 import type { FixedCostInput, MonthlyCostInput } from "@/lib/analytics/metrics";
 
 export interface DashCosts {
@@ -10,6 +11,7 @@ export interface DashCosts {
 
 export interface DashProps {
   report: Report;
+  upcoming: Upcoming;
   brand: string;
   periodKey: string;
   periodOptions: { key: string; label: string }[];

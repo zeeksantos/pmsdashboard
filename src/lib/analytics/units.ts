@@ -28,6 +28,7 @@ export async function refreshUnitStartDates(
       .select("check_in")
       .eq("workspace_id", workspaceId)
       .in("listing_id", ids)
+      .eq("pending", false)
       .in("kind", ["booking", "cohost"])
       .not("check_in", "is", null)
       .order("check_in", { ascending: true })

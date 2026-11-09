@@ -16,6 +16,7 @@ import {
   type Portfolio,
   type TxnInput,
 } from "./metrics";
+import { buildUpcoming, type Upcoming, type UpcomingTxn } from "./upcoming";
 import { buildReport, type Report, type ReportTxn } from "./report";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
@@ -154,6 +155,7 @@ export async function loadPortfolio(workspaceId: string, period: Pick<Period, "f
         .from("an_transactions")
         .select("id, kind, channel, txn_date, check_in, check_out, amount_base, listing_id, confirmation_code")
         .eq("workspace_id", workspaceId)
+        .eq("pending", false)
         .or(f.afterStart)
         .or(f.beforeEnd)
         .order("id")
@@ -190,6 +192,7 @@ export async function loadReport(workspaceId: string, period: Pick<Period, "from
           "id, kind, raw_type, channel, txn_date, booked_on, confirmation_code, guest_name, check_in, check_out, nights, currency, amount, fx_rate, amount_base, gross, service_fee, cleaning_fee, paid_out, details, listing_id"
         )
         .eq("workspace_id", workspaceId)
+        .eq("pending", false)
         .or(f.afterStart)
         .or(f.beforeEnd)
         .order("id")
@@ -223,3 +226,29 @@ export async function loadReport(workspaceId: string, period: Pick<Period, "from
 }
 
 export { monthRange };
+
+/** Upcoming (pending, not yet paid) bookings — never part of earnings. */
+export async function loadUpcoming(workspaceId: string, units: AnUnit[], listings: AnListing[]): Promise<Upcoming> {
+  const db = await createClient();
+  const transactions = await fetchAll<UpcomingTxn>((a, z) =>
+    db
+      .from("an_transactions")
+      .select("id, kind, txn_date, confirmation_code, guest_name, check_in, check_out, nights, booked_on, amount_base, gross, cleaning_fee, fx_rate, listing_id")
+      .eq("workspace_id", workspaceId)
+      .eq("pending", true)
+      .order("id")
+      .range(a, z)
+  );
+  return buildUpcoming({
+    transactions: transactions.map((t) => ({
+      ...t,
+      amount_base: Number(t.amount_base),
+      fx_rate: Number(t.fx_rate),
+      gross: t.gross == null ? null : Number(t.gross),
+      cleaning_fee: t.cleaning_fee == null ? null : Number(t.cleaning_fee),
+    })),
+    units,
+    listings,
+    today: getManilaToday(),
+  });
+}

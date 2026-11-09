@@ -152,6 +152,12 @@ export interface ParseResult {
   listings: string[];
   periodStart: string | null;
   periodEnd: string | null;
+  /**
+   * Airbnb's "pending" export: upcoming reservations that haven't paid out
+   * yet (no "Paid out" column). Stored apart from earnings and replaced by
+   * the paid line once the Transaction history that includes it is uploaded.
+   */
+  pending: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -328,6 +334,7 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
     listings: [],
     periodStart: null,
     periodEnd: null,
+    pending: false,
   });
 
   const table = parseCsv(text);
@@ -371,6 +378,8 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
       channel
     );
   }
+
+  const pending = channel === "airbnb" && !mapping.paidOut;
 
   const col = new Map<FieldKey, number>();
   for (const [field, header] of Object.entries(mapping) as [FieldKey, string][]) {
@@ -452,10 +461,13 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
         paidOut,
         details: cleanText(get(r, "details")),
       };
-      pushRow(row, [
-        "airbnb", date, rawType, row.code, checkIn, checkOut, row.listing, row.details,
-        amountMoney?.value ?? null, paidOut, currency,
-      ]);
+      pushRow(
+        row,
+        pending
+          ? // the expected payout date can move, so leave it out of the key
+            ["airbnb-pending", rawType, row.code, checkIn, checkOut, row.listing, amountMoney?.value ?? null, currency]
+          : ["airbnb", date, rawType, row.code, checkIn, checkOut, row.listing, row.details, amountMoney?.value ?? null, paidOut, currency]
+      );
     }
   } else {
     let usedGrossOnly = false;
@@ -555,6 +567,7 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
     listings: Array.from(listingSet).sort((a, b) => a.localeCompare(b)),
     periodStart,
     periodEnd,
+    pending,
   };
 }
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { lookupWorkspace } from "@/lib/analytics/workspace";
-import { loadReport, periodOptions, resolvePeriod } from "@/lib/analytics/data";
+import { loadReport, loadUpcoming, periodOptions, resolvePeriod } from "@/lib/analytics/data";
 import { brandName, PRODUCT_NAME } from "@/lib/analytics/branding";
 import { toManilaDateString } from "@/lib/calendar";
 import { Dashboard } from "@/components/analytics/dash/Dashboard";
@@ -42,6 +42,7 @@ export default async function AnalyticsDashboardPage({
   const currency = ws.workspace.base_currency;
   const data = await loadReport(ws.workspace.id, period, currency);
   const { report } = data;
+  const upcoming = await loadUpcoming(ws.workspace.id, data.units, data.listings);
 
   if (!data.lastImportAt) {
     return (
@@ -75,12 +76,15 @@ export default async function AnalyticsDashboardPage({
   const uploaded = toManilaDateString(data.lastImportAt);
   const generated = report.hasData
     ? `Data through ${fmtDay(report.window.end)} · last upload ${fmtDay(uploaded)}`
-    : `No transactions in ${period.label.toLowerCase()} · last upload ${fmtDay(uploaded)}`;
+    : upcoming.count
+      ? `No paid transactions yet · ${upcoming.count} upcoming · last upload ${fmtDay(uploaded)}`
+      : `No transactions in ${period.label.toLowerCase()} · last upload ${fmtDay(uploaded)}`;
 
   return (
     <Dashboard
       key={period.key}
       report={report}
+      upcoming={upcoming}
       brand={brandName(ws.workspace)}
       periodKey={period.key}
       periodOptions={periodOptions().map((o) => ({ key: o.key, label: o.label }))}

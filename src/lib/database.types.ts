@@ -252,6 +252,7 @@ export type AnImport = {
   period_start: string | null;
   period_end: string | null;
   fx_rates: Record<string, number>;
+  pending: boolean;
   created_by: string | null;
   created_at: string;
 };
@@ -282,6 +283,7 @@ export type AnTransaction = {
   paid_out: number | null;
   details: string | null;
   dedupe_key: string;
+  pending: boolean;
   created_at: string;
 };
 

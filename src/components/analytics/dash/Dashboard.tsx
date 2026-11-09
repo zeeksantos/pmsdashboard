@@ -7,11 +7,13 @@ import type { DashProps, TabProps } from "./types";
 import { AdvancedTab, BuildingsTab, OccupancyTab, OverviewTab, UnitDrawer } from "./tabs-overview";
 import { BreakEvenTab, IncomeTab, useCostState } from "./tabs-money";
 import { CohostTab, ListingsTab, RefundsTab, TransactionsTab } from "./tabs-lists";
+import { UpcomingTab } from "./tabs-upcoming";
 
 export const TABS = [
   ["overview", "Overview"],
   ["buildings", "Buildings & units"],
   ["occupancy", "Occupancy"],
+  ["upcoming", "Upcoming"],
   ["advanced", "Advanced"],
   ["income", "Monthly income"],
   ["costs", "Break-even (forecast)"],
@@ -34,7 +36,13 @@ function setUrl(params: Record<string, string | null>) {
 export function Dashboard(props: DashProps & { initialTab: string; initialUnit: string | null }) {
   const { report: r, currency, brand } = props;
   const router = useRouter();
-  const [tab, setTab] = useState<TabKey>(() => (TABS.some(([k]) => k === props.initialTab) ? (props.initialTab as TabKey) : "overview"));
+  const [tab, setTab] = useState<TabKey>(() =>
+    TABS.some(([k]) => k === props.initialTab)
+      ? (props.initialTab as TabKey)
+      : !r.hasData && props.upcoming.count
+        ? "upcoming"
+        : "overview"
+  );
   const [unit, setUnit] = useState<string | null>(props.initialUnit);
   const cs = useCostState(props.costs);
   const m = useCallback((n: number) => money(n, currency), [currency]);
@@ -62,8 +70,14 @@ export function Dashboard(props: DashProps & { initialTab: string; initialUnit: 
           <div>
             <h1>{brand}</h1>
             <p className="muted">
-              {shortDate(r.window.start)}, {r.window.start.slice(0, 4)} – {shortDate(r.window.end)}, {r.window.end.slice(0, 4)} · {r.window.days} days · all
-              amounts in {currency}
+              {r.hasData ? (
+                <>
+                  {shortDate(r.window.start)}, {r.window.start.slice(0, 4)} – {shortDate(r.window.end)}, {r.window.end.slice(0, 4)} · {r.window.days} days ·
+                  all amounts in {currency}
+                </>
+              ) : (
+                <>No paid transactions in this period yet · all amounts in {currency}</>
+              )}
             </p>
           </div>
           <div className="meta">
@@ -94,23 +108,58 @@ export function Dashboard(props: DashProps & { initialTab: string; initialUnit: 
             <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => pick(k)}>
               {label}
               {k === "overview" && urgent > 0 && <span className="badge">{urgent}</span>}
+              {k === "upcoming" && props.upcoming.count > 0 && <span className="badge info">{props.upcoming.count}</span>}
             </button>
           ))}
         </nav>
       </header>
       <main className="dash" role="tabpanel" aria-label={TABS.find(([k]) => k === tab)?.[1]}>
-        {tab === "overview" && <OverviewTab {...tp} />}
-        {tab === "buildings" && <BuildingsTab {...tp} />}
-        {tab === "occupancy" && <OccupancyTab {...tp} />}
-        {tab === "advanced" && <AdvancedTab {...tp} />}
-        {tab === "income" && <IncomeTab {...tp} cs={cs} />}
-        {tab === "costs" && <BreakEvenTab {...tp} cs={cs} />}
-        {tab === "listings" && <ListingsTab {...tp} />}
-        {tab === "cohost" && <CohostTab {...tp} />}
-        {tab === "adjust" && <RefundsTab {...tp} />}
-        {tab === "tx" && <TransactionsTab {...tp} />}
+        {!r.hasData && tab !== "upcoming" ? (
+          <NoPaidData upcoming={props.upcoming.count} canEdit={props.canEdit} onUpcoming={() => pick("upcoming")} />
+        ) : (
+          <>
+            {tab === "overview" && <OverviewTab {...tp} />}
+            {tab === "buildings" && <BuildingsTab {...tp} />}
+            {tab === "occupancy" && <OccupancyTab {...tp} />}
+            {tab === "upcoming" && <UpcomingTab {...tp} />}
+            {tab === "advanced" && <AdvancedTab {...tp} />}
+            {tab === "income" && <IncomeTab {...tp} cs={cs} />}
+            {tab === "costs" && <BreakEvenTab {...tp} cs={cs} />}
+            {tab === "listings" && <ListingsTab {...tp} />}
+            {tab === "cohost" && <CohostTab {...tp} />}
+            {tab === "adjust" && <RefundsTab {...tp} />}
+            {tab === "tx" && <TransactionsTab {...tp} />}
+          </>
+        )}
       </main>
       <UnitDrawer {...tp} id={unit} onClose={closeUnit} />
     </>
+  );
+}
+
+function NoPaidData({ upcoming, canEdit, onUpcoming }: { upcoming: number; canEdit: boolean; onUpcoming: () => void }) {
+  return (
+    <div className="panel">
+      <div className="head">
+        <h2>No paid transactions in this period yet</h2>
+      </div>
+      <p className="muted">
+        This tab is built from money that has actually paid out. Upload Airbnb&apos;s <b>Transaction history</b> export (Menu → Earnings → Transaction
+        history → Export CSV), or a Booking.com / Agoda reservations export, and it fills in.
+        {upcoming > 0 && ` Your ${upcoming} upcoming booking${upcoming === 1 ? " is" : "s are"} on the Upcoming tab in the meantime.`}
+      </p>
+      <div className="filters" style={{ marginTop: 14 }}>
+        {upcoming > 0 && (
+          <button type="button" className="btn dark" onClick={onUpcoming}>
+            See upcoming bookings
+          </button>
+        )}
+        {canEdit && (
+          <a className="btn" href="/analytics/import">
+            Upload an export
+          </a>
+        )}
+      </div>
+    </div>
   );
 }

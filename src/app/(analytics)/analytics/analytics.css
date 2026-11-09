@@ -227,6 +227,9 @@
   line-height: 18px;
   text-align: center;
 }
+.an nav.tabs .badge.info {
+  background: var(--teal);
+}
 
 .an main.dash {
   padding: 28px 32px 60px;
@@ -317,6 +320,9 @@
 }
 .an .grid.even {
   grid-template-columns: 1fr 1fr;
+}
+.an .grid > * {
+  min-width: 0;
 }
 .an .grid.wide-left {
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
@@ -699,6 +705,7 @@
 .an .filters select,
 .an .filters input {
   padding: 7px 10px;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 4px;
   background: var(--surface-1);
