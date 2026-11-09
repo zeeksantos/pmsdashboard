@@ -2,7 +2,7 @@
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. In the Supabase dashboard, open **SQL Editor** and run the files in
-   `migrations/` **in order** (`0001_...` through `0010_...`). Each is
+   `migrations/` **in order** (`0001_...` through `0011_...`). Each is
    idempotent-ish but not re-runnable — run once.
 3. (Optional) Run `seed.sql` for a handful of sample units to test the
    Units & Rates page against.
