@@ -93,7 +93,7 @@ export default async function AnalyticsDashboardPage({
       canEdit={ws.canEdit}
       costs={costs}
       hasUploads
-      initialTab={one(sp.tab) ?? "overview"}
+      initialTab={one(sp.tab) ?? ""}
       initialUnit={one(sp.unit) ?? null}
     />
   );
