@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { money, shortDate } from "./ui";
+import { RefreshButton } from "./RefreshButton";
 import type { DashProps, TabProps } from "./types";
 import { AdvancedTab, BuildingsTab, OccupancyTab, OverviewTab, UnitDrawer } from "./tabs-overview";
 import { BreakEvenTab, IncomeTab, useCostState } from "./tabs-money";
@@ -83,7 +84,9 @@ export function Dashboard(props: DashProps & { initialTab: string; initialUnit: 
             </p>
           </div>
           <div className="meta">
-            <select
+            <div className="controls">
+              <RefreshButton loadedAt={props.loadedAt} />
+              <select
               aria-label="Period"
               value={props.periodKey}
               onChange={(e) => {
@@ -98,7 +101,8 @@ export function Dashboard(props: DashProps & { initialTab: string; initialUnit: 
                   {o.label}
                 </option>
               ))}
-            </select>
+              </select>
+            </div>
             <div>
               {r.transactions.length.toLocaleString()} transactions · {r.units.filter((u) => !u.archived).length} units
             </div>

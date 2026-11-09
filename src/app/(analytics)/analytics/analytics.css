@@ -179,6 +179,41 @@
   color: var(--ink-2);
   text-align: right;
 }
+.an .top-row .meta .controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+.an .top-row .meta .controls select {
+  margin-top: 0;
+}
+.an .btn.refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+}
+.an .top-row .meta .updated {
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  order: -1;
+}
+.an .spin {
+  animation: an-spin 0.9s linear infinite;
+}
+@keyframes an-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .an .spin {
+    animation: none;
+  }
+}
 .an .top-row .meta select {
   margin-top: 6px;
   padding: 5px 8px;

@@ -89,6 +89,7 @@ export default async function AnalyticsDashboardPage({
       periodKey={period.key}
       periodOptions={periodOptions().map((o) => ({ key: o.key, label: o.label }))}
       generated={generated}
+      loadedAt={new Date().toISOString()}
       currency={currency}
       canEdit={ws.canEdit}
       costs={costs}

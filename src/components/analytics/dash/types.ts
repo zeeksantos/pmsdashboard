@@ -16,6 +16,8 @@ export interface DashProps {
   periodKey: string;
   periodOptions: { key: string; label: string }[];
   generated: string;
+  /** When the server loaded this data (ISO), shown next to Refresh. */
+  loadedAt: string;
   currency: string;
   canEdit: boolean;
   costs: DashCosts;
