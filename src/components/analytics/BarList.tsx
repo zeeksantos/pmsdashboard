@@ -44,4 +44,5 @@ export const CHANNEL_COLORS: Record<string, string> = {
   booking: "#d95926",
   agoda: "#199e70",
   other: "#c98500",
+  direct: "#1877f2",
 };

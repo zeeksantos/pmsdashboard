@@ -147,7 +147,7 @@ export type AuditLog = {
 
 // ── Portfolio Analytics (supabase/migrations/0010_analytics.sql) ─────────
 
-export type AnChannel = "airbnb" | "booking" | "agoda" | "other";
+export type AnChannel = "airbnb" | "booking" | "agoda" | "other" | "direct";
 export type AnTxnKind =
   | "booking"
   | "payout"
@@ -260,7 +260,8 @@ export type AnImport = {
 export type AnTransaction = {
   id: string;
   workspace_id: string;
-  import_id: string;
+  /** null for bookings typed in on the Direct bookings page */
+  import_id: string | null;
   listing_id: string | null;
   channel: AnChannel;
   kind: AnTxnKind;
@@ -284,6 +285,10 @@ export type AnTransaction = {
   details: string | null;
   dedupe_key: string;
   pending: boolean;
+  /** where the booking came from (Facebook, Instagram, …); null = the channel */
+  source: string | null;
+  payment_method: string | null;
+  notes: string | null;
   created_at: string;
 };
 
@@ -417,7 +422,7 @@ export type Database = {
       an_imports: AnTable<AnImport, "workspace_id" | "channel" | "file_name">;
       an_transactions: AnTable<
         AnTransaction,
-        "workspace_id" | "import_id" | "channel" | "kind" | "txn_date" | "currency" | "dedupe_key"
+        "workspace_id" | "channel" | "kind" | "txn_date" | "currency" | "dedupe_key"
       >;
       an_unit_costs: AnTable<AnUnitCosts, "unit_id" | "workspace_id">;
       an_monthly_costs: AnTable<AnMonthlyCosts, "unit_id" | "workspace_id" | "month">;

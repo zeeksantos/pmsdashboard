@@ -348,26 +348,30 @@ export function TransactionsTab(p: TabProps) {
   const [type, setType] = useState("");
   const [listing, setListing] = useState("");
   const [month, setMonth] = useState("");
+  const [source, setSource] = useState("");
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const types = useMemo(() => [...new Set(r.transactions.map((t) => t.type))].sort(), [r]);
   const listings = useMemo(() => [...new Set(r.transactions.map((t) => t.listing).filter(Boolean))].sort(), [r]);
+  const sources = useMemo(() => [...new Set(r.transactions.filter((t) => t.kind !== "payout").map((t) => t.source))].sort(), [r]);
   const rows = useMemo(() => {
     const s = q.toLowerCase();
     return r.transactions.filter(
       (t) =>
         (!type || t.type === type) &&
         (!listing || t.listing === listing) &&
+        (!source || (t.source === source && t.kind !== "payout")) &&
         (month === "" || t.monthIndex === Number(month)) &&
         (!s || `${t.guest} ${t.code} ${t.details} ${t.listing}`.toLowerCase().includes(s))
     );
-  }, [r, type, listing, month, q]);
+  }, [r, type, listing, source, month, q]);
   const amt = rows.reduce((a, t) => a + (t.kind === "payout" ? 0 : t.amountBase), 0);
   const paid = rows.reduce((a, t) => a + (t.paidOutBase ?? 0), 0);
   const reset = () => {
     setType("");
     setListing("");
     setMonth("");
+    setSource("");
     setQ("");
     setLimit(PAGE);
   };
@@ -388,6 +392,14 @@ export function TransactionsTab(p: TabProps) {
             <option key={t}>{t}</option>
           ))}
         </select>
+        {sources.length > 1 && (
+          <select value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source">
+            <option value="">All sources</option>
+            {sources.map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+        )}
         <select value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Month">
           <option value="">All months</option>
           {r.months.map((mo, i) => (
@@ -410,6 +422,7 @@ export function TransactionsTab(p: TabProps) {
             <tr>
               <th>Date</th>
               <th>Type</th>
+              <th>Source</th>
               <th>Code</th>
               <th>Guest</th>
               <th>Listing</th>
@@ -427,6 +440,10 @@ export function TransactionsTab(p: TabProps) {
               <tr key={t.id}>
                 <td style={{ whiteSpace: "nowrap" }}>{t.date}</td>
                 <td>{t.type}</td>
+                <td className="muted">
+                  {t.kind === "payout" ? "" : t.source}
+                  {t.paymentMethod && <div className="small">via {t.paymentMethod}</div>}
+                </td>
                 <td className="muted">{t.code}</td>
                 <td>{t.guest}</td>
                 <td>

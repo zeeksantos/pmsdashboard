@@ -5,10 +5,13 @@
 
 import { daysInMonth, labelMonth, monthOf, monthRange } from "./metrics.ts";
 import { AREA_COLORS, AREA_RGB, NO_AREA } from "./report.ts";
+import { isDirect, sourceColor, sourceOf } from "./sources.ts";
 
 export interface UpcomingTxn {
   id: string;
   kind: string;
+  channel?: string;
+  source?: string | null;
   txn_date: string;
   confirmation_code: string | null;
   guest_name: string | null;
@@ -56,6 +59,7 @@ export interface UpcomingStay {
   perNight: number;
   payoutDate: string;
   status: StayStatus;
+  source: string;
 }
 
 export interface UpcomingGroup {
@@ -94,6 +98,7 @@ export interface Upcoming {
   groups: UpcomingGroup[];
   stays: UpcomingStay[];
   unlinked: number;
+  sources: { label: string; color: string; direct: boolean; bookings: number; nights: number; net: number }[];
 }
 
 const DAY = 86_400_000;
@@ -241,6 +246,7 @@ export function buildUpcoming(input: {
       perNight: gr != null && n ? (gr - clean) / n : perNight,
       payoutDate: t.txn_date,
       status,
+      source: sourceOf(t.channel ?? "airbnb", t.source),
     });
   }
   rows.sort((a, b) => a.checkIn.localeCompare(b.checkIn) || a.group.localeCompare(b.group));
@@ -275,5 +281,18 @@ export function buildUpcoming(input: {
     groups: groupList,
     stays: rows,
     unlinked: groupList.filter((g) => !g.unitId).length,
+    sources: (() => {
+      const m = new Map<string, { bookings: number; nights: number; net: number }>();
+      for (const r of rows) {
+        const a = m.get(r.source) ?? { bookings: 0, nights: 0, net: 0 };
+        a.bookings += 1;
+        a.nights += r.nights;
+        a.net += r.net;
+        m.set(r.source, a);
+      }
+      return [...m.entries()]
+        .sort((a, b) => b[1].net - a[1].net)
+        .map(([label, a], i) => ({ label, color: sourceColor(label, i), direct: isDirect(label), ...a }));
+    })(),
   };
 }

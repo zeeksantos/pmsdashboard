@@ -189,7 +189,7 @@ export async function loadReport(workspaceId: string, period: Pick<Period, "from
       db
         .from("an_transactions")
         .select(
-          "id, kind, raw_type, channel, txn_date, booked_on, confirmation_code, guest_name, check_in, check_out, nights, currency, amount, fx_rate, amount_base, gross, service_fee, cleaning_fee, paid_out, details, listing_id"
+          "id, kind, raw_type, channel, txn_date, booked_on, confirmation_code, guest_name, check_in, check_out, nights, currency, amount, fx_rate, amount_base, gross, service_fee, cleaning_fee, paid_out, details, listing_id, source, payment_method"
         )
         .eq("workspace_id", workspaceId)
         .eq("pending", false)
@@ -230,12 +230,18 @@ export { monthRange };
 /** Upcoming (pending, not yet paid) bookings — never part of earnings. */
 export async function loadUpcoming(workspaceId: string, units: AnUnit[], listings: AnListing[]): Promise<Upcoming> {
   const db = await createClient();
+  const today = getManilaToday();
   const transactions = await fetchAll<UpcomingTxn>((a, z) =>
     db
       .from("an_transactions")
-      .select("id, kind, txn_date, confirmation_code, guest_name, check_in, check_out, nights, booked_on, amount_base, gross, cleaning_fee, fx_rate, listing_id")
+      .select(
+        "id, kind, channel, source, txn_date, confirmation_code, guest_name, check_in, check_out, nights, booked_on, amount_base, gross, cleaning_fee, fx_rate, listing_id"
+      )
       .eq("workspace_id", workspaceId)
-      .eq("pending", true)
+      // Airbnb's pending export, plus future stays from reservation-style
+      // sources (direct bookings, Booking.com / Agoda exports) that haven't
+      // happened yet — those aren't in this month's earnings either.
+      .or(`pending.eq.true,and(channel.neq.airbnb,check_in.gt.${today})`)
       .order("id")
       .range(a, z)
   );
@@ -249,6 +255,6 @@ export async function loadUpcoming(workspaceId: string, units: AnUnit[], listing
     })),
     units,
     listings,
-    today: getManilaToday(),
+    today,
   });
 }

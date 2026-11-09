@@ -81,6 +81,7 @@ export default async function AnalyticsLayout({ children }: { children: React.Re
   const links: TopBarLink[] = [
     { href: "/analytics", label: "Dashboard" },
     { href: "/analytics/import", label: "Upload exports" },
+    { href: "/analytics/direct", label: "Direct bookings" },
     { href: "/analytics/units", label: "Unit setup" },
     { href: "/analytics/expenses", label: "Receipts" },
   ];

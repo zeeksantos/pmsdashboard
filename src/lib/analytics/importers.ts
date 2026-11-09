@@ -7,11 +7,13 @@
 // by hand (ParseOptions.mapping).
 
 import { parseCsv } from "./csv.ts";
+import { normaliseSource } from "./sources.ts";
 import { fingerprint, inferDayFirst, nightsBetween, parseDate, parseMoney, round2 } from "./values.ts";
 
 export type Channel = "airbnb" | "booking" | "agoda" | "other";
 
-export const CHANNEL_LABELS: Record<Channel, string> = {
+export const CHANNEL_LABELS: Record<Channel | "direct", string> = {
+  direct: "Direct",
   airbnb: "Airbnb",
   booking: "Booking.com",
   agoda: "Agoda",
@@ -61,6 +63,8 @@ export interface NormalizedTxn {
   taxes: number | null;
   paidOut: number | null;
   details: string | null;
+  /** Where the booking came from (Facebook, Instagram, …), when the file says. */
+  source: string | null;
   dedupeKey: string;
 }
 
@@ -83,7 +87,8 @@ export type FieldKey =
   | "taxes"
   | "commission"
   | "status"
-  | "bookedOn";
+  | "bookedOn"
+  | "source";
 
 export const FIELD_LABELS: Record<FieldKey, string> = {
   date: "Transaction date",
@@ -105,6 +110,7 @@ export const FIELD_LABELS: Record<FieldKey, string> = {
   commission: "Commission amount",
   status: "Status",
   bookedOn: "Booked on",
+  source: "Booking source (Facebook, Instagram…)",
 };
 
 /** Fields offered in the manual column-mapping step for stay-row files. */
@@ -121,6 +127,7 @@ export const STAY_MAPPING_FIELDS: FieldKey[] = [
   "status",
   "nights",
   "bookedOn",
+  "source",
 ];
 
 export type ColumnMapping = Partial<Record<FieldKey, string>>;
@@ -230,6 +237,8 @@ const OTHER_ALIASES: Aliases = (() => {
       merged[key] = Array.from(new Set([...(merged[key] ?? []), ...list]));
     }
   }
+  // A spreadsheet of direct bookings usually says where each one came from.
+  merged.source = ["source", "bookingsource", "leadsource", "platform", "bookedvia", "bookingchannel", "channel", "via", "referrer"];
   return merged;
 })();
 
@@ -460,6 +469,7 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
         taxes: parseMoney(get(r, "taxes"))?.value ?? null,
         paidOut,
         details: cleanText(get(r, "details")),
+        source: null,
       };
       pushRow(
         row,
@@ -525,6 +535,7 @@ export function parseExport(text: string, options: ParseOptions = {}): ParseResu
         taxes: null,
         paidOut: null,
         details: null,
+        source: normaliseSource(get(r, "source")),
       };
       // Keyed on the reservation itself, not the amount: a newer export of
       // the same booking (modified price) updates it instead of duplicating.

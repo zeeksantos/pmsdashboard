@@ -165,7 +165,10 @@ export function UpcomingTab(p: TabProps) {
                   <td className="num">{s.nights}</td>
                   <td>
                     {s.guest}
-                    <div className="muted small">{s.code}</div>
+                    <div className="muted small">
+                      {s.source}
+                      {s.code ? ` · ${s.code}` : ""}
+                    </div>
                   </td>
                   <td>
                     <b>{s.group}</b>
@@ -182,7 +185,7 @@ export function UpcomingTab(p: TabProps) {
                   </td>
                   <td>
                     <span className={`tag ${STATUS[s.status].cls}`}>{STATUS[s.status].label}</span>
-                    <div className="muted small">payout {shortDate(s.payoutDate)}</div>
+                    {s.source === "Airbnb" && <div className="muted small">payout {shortDate(s.payoutDate)}</div>}
                   </td>
                 </tr>
               ))}

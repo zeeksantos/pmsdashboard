@@ -8,6 +8,7 @@ import { AdvancedTab, BuildingsTab, OccupancyTab, OverviewTab, UnitDrawer } from
 import { BreakEvenTab, IncomeTab, useCostState } from "./tabs-money";
 import { CohostTab, ListingsTab, RefundsTab, TransactionsTab } from "./tabs-lists";
 import { UpcomingTab } from "./tabs-upcoming";
+import { SourcesTab } from "./tabs-sources";
 
 export const TABS = [
   ["overview", "Overview"],
@@ -18,6 +19,7 @@ export const TABS = [
   ["income", "Monthly income"],
   ["costs", "Break-even (forecast)"],
   ["listings", "Listings"],
+  ["sources", "Sources"],
   ["cohost", "Co-host"],
   ["adjust", "Refunds & claims"],
   ["tx", "All transactions"],
@@ -126,6 +128,7 @@ export function Dashboard(props: DashProps & { initialTab: string; initialUnit: 
             {tab === "income" && <IncomeTab {...tp} cs={cs} />}
             {tab === "costs" && <BreakEvenTab {...tp} cs={cs} />}
             {tab === "listings" && <ListingsTab {...tp} />}
+            {tab === "sources" && <SourcesTab {...tp} />}
             {tab === "cohost" && <CohostTab {...tp} />}
             {tab === "adjust" && <RefundsTab {...tp} />}
             {tab === "tx" && <TransactionsTab {...tp} />}

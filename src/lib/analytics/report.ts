@@ -27,6 +27,7 @@ import {
   type FixedCostInput,
   type MonthlyCostInput,
 } from "./metrics.ts";
+import { isDirect, sourceColor, sourceOf } from "./sources.ts";
 
 export interface ReportTxn {
   id: string;
@@ -50,6 +51,9 @@ export interface ReportTxn {
   paid_out: number | null;
   details: string | null;
   listing_id: string | null;
+  /** Where the booking came from; null = its channel. */
+  source?: string | null;
+  payment_method?: string | null;
 }
 
 export interface ReportUnitInput {
@@ -190,6 +194,25 @@ export interface ListingReport {
   adr: number;
 }
 
+export interface SourceReport {
+  label: string;
+  color: string;
+  direct: boolean;
+  stays: number;
+  nights: number;
+  net: number;
+  gross: number;
+  fees: number;
+  share: number;
+  avgStay: number;
+  adr: number;
+  perStay: number;
+  leadMedian: number | null;
+  guests: number;
+  repeatGuests: number;
+  unitCount: number;
+}
+
 export interface TxnRow {
   id: string;
   date: string;
@@ -212,6 +235,8 @@ export interface TxnRow {
   cleaning: number | null;
   gross: number | null;
   monthIndex: number;
+  source: string;
+  paymentMethod: string | null;
 }
 
 export interface Report {
@@ -289,6 +314,15 @@ export interface Report {
     net: number;
     byListing: { listing: string; amount: number }[];
   };
+  sources: {
+    rows: SourceReport[];
+    directNet: number;
+    directShare: number;
+    directStays: number;
+    otaFeeRate: number;
+    feesSaved: number;
+    monthly: { label: string; color: string; values: number[] }[];
+  };
   transactions: TxnRow[];
   alerts: Alert[];
   unlinkedListings: number;
@@ -312,7 +346,10 @@ export function buildReport(input: ReportInput): Report {
   const periodStart = monthStart(months[0]);
   const periodEnd = monthEnd(months[months.length - 1]);
   const inPeriod = (d: string) => d >= periodStart && d <= periodEnd;
-  const txns = input.transactions.filter((t) => inPeriod(revenueDate(t)));
+  // Stays from reservation-style sources (direct, Booking.com, Agoda) that
+  // haven't checked in yet belong on the Upcoming tab, not in earnings.
+  const notYet = (t: ReportTxn) => t.channel !== "airbnb" && !!t.check_in && t.check_in > input.today;
+  const txns = input.transactions.filter((t) => inPeriod(revenueDate(t)) && !notYet(t));
   const allDates = txns.map((t) => t.txn_date).sort();
   const dataEnd = allDates.length ? allDates[allDates.length - 1] : null;
   const firstData = allDates.length ? allDates[0] : null;
@@ -384,6 +421,12 @@ export function buildReport(input: ReportInput): Report {
       continue;
     }
     const amt = Number(t.amount_base);
+    if (t.channel === "direct" && t.payment_method && t.kind === "booking") {
+      const key = `${t.payment_method}|${t.currency}`;
+      const p = payoutMap.get(key) ?? { method: t.payment_method, currency: t.currency, amount: 0 };
+      p.amount += Number(t.amount);
+      payoutMap.set(key, p);
+    }
     net += amt;
     if (i >= 0) monthlyNet[i] += amt;
     const u = unitOfTxn(t);
@@ -721,7 +764,8 @@ export function buildReport(input: ReportInput): Report {
       if (entry) entry.net = o.net;
     }
     let model = "No activity";
-    if (o.cohostIn > 0 && o.gross === o.cohostIn) model = "Co-host";
+    if (l.channel === "direct") model = o.bookings > 0 ? "Direct" : "No activity";
+    else if (o.cohostIn > 0 && o.gross === o.cohostIn) model = "Co-host";
     else if (o.cohostOut < 0) model = "Primary host, shared";
     else if (o.bookings > 0 || o.gross > 0) model = "Primary host";
     return {
@@ -906,6 +950,8 @@ export function buildReport(input: ReportInput): Report {
       cleaning: t.cleaning_fee == null ? null : Number(t.cleaning_fee),
       gross: t.gross == null ? null : Number(t.gross),
       monthIndex: mi(revenueDate(t)),
+      source: sourceOf(t.channel, t.source),
+      paymentMethod: t.payment_method ?? null,
     }));
 
   // ── alerts (shared rules with the rest of the module) ─────────────────
@@ -937,6 +983,64 @@ export function buildReport(input: ReportInput): Report {
     unmappedListings: unlinkedListings,
     formatMoney: input.formatMoney,
   });
+
+  // ── booking sources ───────────────────────────────────────────────────
+  const srcAgg = new Map<
+    string,
+    { stays: number; nights: number; net: number; gross: number; fees: number; adrNum: number; adrDen: number; leads: number[]; guests: Map<string, number>; units: Set<string>; monthNet: number[] }
+  >();
+  for (const t of txns) {
+    if (!isStay(t)) continue;
+    const label = sourceOf(t.channel, t.source);
+    let a = srcAgg.get(label);
+    if (!a) srcAgg.set(label, (a = { stays: 0, nights: 0, net: 0, gross: 0, fees: 0, adrNum: 0, adrDen: 0, leads: [], guests: new Map(), units: new Set(), monthNet: zero() }));
+    const amt = Number(t.amount_base);
+    const n = Number(t.nights ?? 0);
+    const g = t.kind === "booking" ? (t.gross != null ? base(t, t.gross) : amt + base(t, t.service_fee)) : amt;
+    a.stays += 1;
+    a.nights += n;
+    a.net += amt;
+    a.gross += g;
+    a.fees += t.kind === "booking" ? base(t, t.service_fee) : 0;
+    if (n) {
+      a.adrNum += g - base(t, t.cleaning_fee);
+      a.adrDen += n;
+    }
+    if (t.booked_on && t.check_in && t.booked_on <= t.check_in) a.leads.push(daysBetween(t.booked_on, t.check_in));
+    const guest = (t.guest_name ?? "").trim().toLowerCase();
+    if (guest) a.guests.set(guest, (a.guests.get(guest) ?? 0) + 1);
+    const u = unitOfTxn(t);
+    if (u) a.units.add(u.id);
+    const i = mi(revenueDate(t));
+    if (i >= 0) a.monthNet[i] += amt;
+  }
+  const srcTotal = sum([...srcAgg.values()].map((a) => a.net));
+  const sourceRows: SourceReport[] = [...srcAgg.entries()]
+    .sort((x, y) => y[1].net - x[1].net)
+    .map(([label, a], idx) => ({
+      label,
+      color: sourceColor(label, idx),
+      direct: isDirect(label),
+      stays: a.stays,
+      nights: a.nights,
+      net: a.net,
+      gross: a.gross,
+      fees: -a.fees,
+      share: srcTotal ? a.net / srcTotal : 0,
+      avgStay: a.stays ? a.nights / a.stays : 0,
+      adr: a.adrDen ? a.adrNum / a.adrDen : 0,
+      perStay: a.stays ? a.net / a.stays : 0,
+      leadMedian: median(a.leads),
+      guests: a.guests.size,
+      repeatGuests: [...a.guests.values()].filter((c) => c > 1).length,
+      unitCount: a.units.size,
+    }));
+  const directRows = sourceRows.filter((r) => r.direct);
+  const otaRows = sourceRows.filter((r) => !r.direct);
+  const otaGross = sum(otaRows.map((r) => r.gross));
+  const otaFeeRate = otaGross ? -sum(otaRows.map((r) => r.fees)) / otaGross : 0;
+  const directGross = sum(directRows.map((r) => r.gross));
+  const directNet = sum(directRows.map((r) => r.net));
 
   return {
     months,
@@ -1010,6 +1114,15 @@ export function buildReport(input: ReportInput): Report {
       cancellationCount: refundRows.filter((r) => /cancel/i.test(r.category)).length,
       net: sum(refundRows.map((r) => r.amountBase)),
       byListing: [...adjBy.entries()].sort((a, b) => a[1] - b[1]).map(([listing, amount]) => ({ listing, amount })),
+    },
+    sources: {
+      rows: sourceRows,
+      directNet,
+      directShare: srcTotal ? directNet / srcTotal : 0,
+      directStays: sum(directRows.map((r) => r.stays)),
+      otaFeeRate,
+      feesSaved: directGross * otaFeeRate,
+      monthly: sourceRows.map((r) => ({ label: r.label, color: r.color, values: srcAgg.get(r.label)!.monthNet })),
     },
     transactions,
     alerts,

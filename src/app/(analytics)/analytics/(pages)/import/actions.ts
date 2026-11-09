@@ -174,6 +174,7 @@ export async function importExport(_prev: ImportResult, formData: FormData): Pro
         details: r.details,
         dedupe_key: r.dedupeKey,
         pending: parsed.pending,
+        source: r.source,
       };
     };
     const STAY_KINDS = new Set(["booking", "cohost"]);

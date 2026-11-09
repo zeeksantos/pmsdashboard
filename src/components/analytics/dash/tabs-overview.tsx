@@ -115,7 +115,7 @@ export function OverviewTab(p: TabProps) {
         <Panel title="Monthly booking activity" sub="Stays and nights, by the month they were paid">
           <ChartBox config={activity} label="Bookings and nights by month" />
         </Panel>
-        <Panel title="Payout methods">
+        <Panel title="How you got paid">
           {o.payouts.length === 0 ? (
             <p className="muted small">No payout lines in this period.</p>
           ) : (

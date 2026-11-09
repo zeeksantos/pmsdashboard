@@ -148,7 +148,7 @@ export function ImportWizard({ baseCurrency }: { baseCurrency: string }) {
               className={inputClass}
             >
               <option value="">Choose…</option>
-              {(Object.keys(CHANNEL_LABELS) as Channel[]).map((c) => (
+              {(Object.keys(CHANNEL_LABELS) as (Channel | "direct")[]).filter((c): c is Channel => c !== "direct").map((c) => (
                 <option key={c} value={c}>
                   {CHANNEL_LABELS[c]}
                 </option>

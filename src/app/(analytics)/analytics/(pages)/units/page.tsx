@@ -37,9 +37,13 @@ export default async function UnitsPage({
           {CHANNEL_LABELS[l.channel]}
         </span>
       </td>
-      <td className="py-2 pr-3 text-foreground">{l.external_name}</td>
+      <td className="py-2 pr-3 text-foreground">{l.channel === "direct" ? "Direct bookings" : l.external_name}</td>
       <td className="w-64 py-2">
-        <ListingSelect listingId={l.id} unitId={l.unit_id} units={unitOptions} disabled={!ws.canEdit} />
+        {l.channel === "direct" ? (
+          <span className="text-xs text-muted">Direct bookings for this unit — managed on Direct bookings</span>
+        ) : (
+          <ListingSelect listingId={l.id} unitId={l.unit_id} units={unitOptions} disabled={!ws.canEdit} />
+        )}
       </td>
     </tr>
   );
