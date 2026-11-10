@@ -6,7 +6,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-lg">
         <h1 className="text-xl font-semibold text-foreground">Reset your password</h1>
-        <p className="mt-1 text-sm text-muted">We&apos;ll email you a one-time code.</p>
+        <p className="mt-1 text-sm text-muted">Enter your sign-in email and we&apos;ll send you a link to choose a new password.</p>
 
         {isSupabaseConfigured ? (
           <ResetPasswordFlow />

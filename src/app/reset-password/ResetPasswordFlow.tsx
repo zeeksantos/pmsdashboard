@@ -49,7 +49,7 @@ export function ResetPasswordFlow() {
           disabled={isRequesting}
           className="mt-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-60"
         >
-          {isRequesting ? "Sending…" : "Send reset code"}
+          {isRequesting ? "Sending…" : "Email me a reset link"}
         </button>
 
         <Link href="/login" className="text-center text-sm text-muted hover:text-foreground">
@@ -64,9 +64,9 @@ export function ResetPasswordFlow() {
       <input type="hidden" name="email" value={email} />
 
       <p className="text-sm text-muted">
-        Code sent to <span className="text-foreground">{email}</span>. Use the numeric code
-        printed in the email body — not the link, which can get invalidated by email link
-        scanners before you click it.
+        Email sent to <span className="text-foreground">{email}</span>. Click the <b>Reset password</b> link in it — you&apos;ll
+        come back here signed in and can choose a new password. If the email shows a numeric code instead, enter it below.
+        Nothing there? Check spam, or wait a minute and try again.
       </p>
 
       <div className="flex flex-col gap-1.5">
