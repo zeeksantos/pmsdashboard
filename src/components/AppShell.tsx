@@ -10,16 +10,31 @@ interface AppShellProps {
   userLabel: string;
   signOutButton: React.ReactNode;
   children: React.ReactNode;
+  /** Sidebar title; analytics workspaces show their own brand here. */
+  title?: React.ReactNode;
+  /** Extra content under the title (e.g. a workspace switcher). */
+  sidebarHeader?: React.ReactNode;
+  /** Full-width notice above the page content (e.g. licence status). */
+  banner?: React.ReactNode;
 }
 
-export function AppShell({ items, userLabel, signOutButton, children }: AppShellProps) {
+export function AppShell({
+  items,
+  userLabel,
+  signOutButton,
+  children,
+  title = "PMS Dashboard",
+  sidebarHeader,
+  banner,
+}: AppShellProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col gap-1 border-r border-border bg-surface p-3 md:flex">
-        <div className="px-3 py-4 text-lg font-semibold text-foreground">PMS Dashboard</div>
+      <aside className="hidden w-60 shrink-0 print:hidden! flex-col gap-1 border-r border-border bg-surface p-3 md:flex">
+        <div className="px-3 py-4 text-lg font-semibold text-foreground">{title}</div>
+        {sidebarHeader && <div className="px-3 pb-3">{sidebarHeader}</div>}
         <div className="flex flex-1 flex-col gap-1">
           <NavLinks items={items} />
         </div>
@@ -30,8 +45,8 @@ export function AppShell({ items, userLabel, signOutButton, children }: AppShell
       </aside>
 
       {/* Mobile topbar */}
-      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface px-4 md:hidden">
-        <span className="text-base font-semibold text-foreground">PMS Dashboard</span>
+      <div className="fixed inset-x-0 top-0 z-30 flex h-14 print:hidden items-center justify-between border-b border-border bg-surface px-4 md:hidden">
+        <span className="min-w-0 truncate text-base font-semibold text-foreground">{title}</span>
         <button
           type="button"
           onClick={() => setIsMobileNavOpen(true)}
@@ -51,7 +66,7 @@ export function AppShell({ items, userLabel, signOutButton, children }: AppShell
           />
           <div className="absolute inset-y-0 left-0 flex w-64 flex-col gap-1 bg-surface p-3 shadow-xl">
             <div className="flex items-center justify-between px-3 py-4">
-              <span className="text-lg font-semibold text-foreground">PMS Dashboard</span>
+              <span className="min-w-0 truncate text-lg font-semibold text-foreground">{title}</span>
               <button
                 type="button"
                 onClick={() => setIsMobileNavOpen(false)}
@@ -61,6 +76,7 @@ export function AppShell({ items, userLabel, signOutButton, children }: AppShell
                 <X className="h-5 w-5" />
               </button>
             </div>
+            {sidebarHeader && <div className="px-3 pb-3">{sidebarHeader}</div>}
             <div className="flex flex-1 flex-col gap-1">
               <NavLinks items={items} onNavigate={() => setIsMobileNavOpen(false)} />
             </div>
@@ -72,8 +88,9 @@ export function AppShell({ items, userLabel, signOutButton, children }: AppShell
         </div>
       )}
 
-      <main className="min-w-0 flex-1 pt-14 md:pt-0">
-        <div className="mx-auto max-w-6xl p-4 md:p-8">{children}</div>
+      <main className="min-w-0 flex-1 pt-14 md:pt-0 print:pt-0">
+        {banner && <div className="print:hidden">{banner}</div>}
+        <div className="mx-auto max-w-6xl p-4 md:p-8 print:max-w-none print:p-0">{children}</div>
       </main>
     </div>
   );

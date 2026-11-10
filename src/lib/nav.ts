@@ -11,13 +11,25 @@ export type IconName =
   | "Sparkles"
   | "Wrench"
   | "Bell"
-  | "ScrollText";
+  | "ScrollText"
+  | "ChartLine"
+  | "Upload"
+  | "Building2"
+  | "Wallet"
+  | "TrendingUp"
+  | "BellRing"
+  | "UserRound"
+  | "ListOrdered"
+  | "Settings"
+  | "ShieldCheck";
 
 export interface NavItem {
   href: string;
   label: string;
   icon: IconName;
   roles: UserRole[];
+  /** Only highlight on this exact path (for section index pages). */
+  exact?: boolean;
 }
 
 const ALL_ROLES: UserRole[] = [
@@ -40,6 +52,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/maintenance", label: "Maintenance", icon: "Wrench", roles: ["owner_admin", "manager", "maintenance"] },
   { href: "/notifications", label: "Notifications", icon: "Bell", roles: ALL_ROLES },
   { href: "/audit-logs", label: "Audit Logs", icon: "ScrollText", roles: ["owner_admin", "manager"] },
+  { href: "/analytics", label: "Portfolio Analytics", icon: "ChartLine", roles: ["owner_admin"] },
 ];
 
 export function navForRole(role: UserRole): NavItem[] {

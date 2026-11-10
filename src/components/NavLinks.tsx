@@ -14,6 +14,16 @@ import {
   Wrench,
   Bell,
   ScrollText,
+  ChartLine,
+  Upload,
+  Building2,
+  Wallet,
+  TrendingUp,
+  BellRing,
+  UserRound,
+  ListOrdered,
+  Settings,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { NavItem, IconName } from "@/lib/nav";
@@ -31,6 +41,16 @@ const ICONS: Record<IconName, LucideIcon> = {
   Wrench,
   Bell,
   ScrollText,
+  ChartLine,
+  Upload,
+  Building2,
+  Wallet,
+  TrendingUp,
+  BellRing,
+  UserRound,
+  ListOrdered,
+  Settings,
+  ShieldCheck,
 };
 
 export function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
@@ -39,7 +59,10 @@ export function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?:
   return (
     <>
       {items.map((item) => {
-        const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const isActive =
+          item.href === "/" || item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(item.href + "/");
         const Icon = ICONS[item.icon];
         return (
           <Link

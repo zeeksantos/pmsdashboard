@@ -11,7 +11,9 @@ export type UserRole =
   | "manager"
   | "front_desk"
   | "housekeeping"
-  | "maintenance";
+  | "maintenance"
+  // Portfolio Analytics customers: no PMS access (supabase/migrations/0009-0010).
+  | "analytics_only";
 
 export type UnitStatus =
   | "AVAILABLE"
@@ -142,6 +144,216 @@ export type AuditLog = {
   created_at: string;
 };
 
+
+// ── Portfolio Analytics (supabase/migrations/0010_analytics.sql) ─────────
+
+export type AnChannel = "airbnb" | "booking" | "agoda" | "other" | "direct";
+export type AnTxnKind =
+  | "booking"
+  | "payout"
+  | "adjustment"
+  | "resolution"
+  | "cancellation"
+  | "cohost"
+  | "tax"
+  | "other";
+export type WorkspaceKind = "host" | "manager";
+export type WorkspaceRole = "owner" | "editor" | "viewer";
+
+export type Workspace = {
+  id: string;
+  name: string;
+  kind: WorkspaceKind;
+  brand_name: string | null;
+  brand_logo_path: string | null;
+  brand_color: string | null;
+  statement_footer: string | null;
+  base_currency: string;
+  trial_ends_at: string;
+  access_until: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WorkspaceMember = {
+  workspace_id: string;
+  user_id: string;
+  role: WorkspaceRole;
+  created_at: string;
+};
+
+export type WorkspaceInvite = {
+  id: string;
+  workspace_id: string;
+  email: string;
+  role: WorkspaceRole;
+  invited_by: string | null;
+  created_at: string;
+};
+
+export type AnLicenseEvent = {
+  id: string;
+  workspace_id: string;
+  kind: "activated" | "renewed" | "trial_extended";
+  years: number;
+  days: number;
+  amount: number | null;
+  note: string | null;
+  access_until: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AnOwner = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  email: string | null;
+  management_fee_pct: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AnUnit = {
+  id: string;
+  workspace_id: string;
+  owner_id: string | null;
+  name: string;
+  building: string | null;
+  area: string | null;
+  active_from: string | null;
+  archived: boolean;
+  nickname: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AnListing = {
+  id: string;
+  workspace_id: string;
+  channel: AnChannel;
+  external_name: string;
+  unit_id: string | null;
+  created_at: string;
+};
+
+export type AnImport = {
+  id: string;
+  workspace_id: string;
+  channel: AnChannel;
+  file_name: string;
+  row_count: number;
+  inserted_count: number;
+  duplicate_count: number;
+  skipped_count: number;
+  period_start: string | null;
+  period_end: string | null;
+  fx_rates: Record<string, number>;
+  pending: boolean;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AnTransaction = {
+  id: string;
+  workspace_id: string;
+  /** null for bookings typed in on the Direct bookings page */
+  import_id: string | null;
+  listing_id: string | null;
+  channel: AnChannel;
+  kind: AnTxnKind;
+  raw_type: string | null;
+  txn_date: string;
+  confirmation_code: string | null;
+  guest_name: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  nights: number | null;
+  booked_on: string | null;
+  currency: string;
+  amount: number;
+  fx_rate: number;
+  amount_base: number;
+  gross: number | null;
+  service_fee: number | null;
+  cleaning_fee: number | null;
+  taxes: number | null;
+  paid_out: number | null;
+  details: string | null;
+  dedupe_key: string;
+  pending: boolean;
+  /** where the booking came from (Facebook, Instagram, …); null = the channel */
+  source: string | null;
+  payment_method: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type AnUnitCosts = {
+  unit_id: string;
+  workspace_id: string;
+  rent: number;
+  other_fixed: number;
+  electricity: number;
+  water: number;
+  cleaning_per_stay: number;
+  updated_at: string;
+};
+
+export type AnMonthlyCosts = {
+  unit_id: string;
+  workspace_id: string;
+  month: string;
+  cleaning: number;
+  other: number;
+  updated_at: string;
+};
+
+export type AnExpense = {
+  id: string;
+  workspace_id: string;
+  unit_id: string | null;
+  category: string;
+  amount: number;
+  spent_on: string;
+  description: string | null;
+  receipt_path: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AdminWorkspaceRow = {
+  id: string;
+  name: string;
+  kind: WorkspaceKind;
+  owner_email: string | null;
+  member_count: number;
+  unit_count: number;
+  transaction_count: number;
+  last_import_at: string | null;
+  trial_ends_at: string;
+  access_until: string | null;
+  created_at: string;
+};
+
+export type WorkspaceMemberListRow = {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  role: WorkspaceRole;
+  created_at: string;
+};
+
+type AnTable<Row, Required extends keyof Row> = {
+  Row: Row;
+  Insert: Partial<Row> & Pick<Row, Required>;
+  Update: Partial<Row>;
+  Relationships: [];
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -199,6 +411,22 @@ export type Database = {
         Update: Partial<UnitPhoto>;
         Relationships: [];
       };
+      an_platform_admins: AnTable<{ user_id: string; created_at: string }, "user_id">;
+      workspaces: AnTable<Workspace, "name">;
+      workspace_members: AnTable<WorkspaceMember, "workspace_id" | "user_id">;
+      workspace_invites: AnTable<WorkspaceInvite, "workspace_id" | "email">;
+      an_license_events: AnTable<AnLicenseEvent, "workspace_id" | "kind">;
+      an_owners: AnTable<AnOwner, "workspace_id" | "name">;
+      an_units: AnTable<AnUnit, "workspace_id" | "name">;
+      an_listings: AnTable<AnListing, "workspace_id" | "channel" | "external_name">;
+      an_imports: AnTable<AnImport, "workspace_id" | "channel" | "file_name">;
+      an_transactions: AnTable<
+        AnTransaction,
+        "workspace_id" | "channel" | "kind" | "txn_date" | "currency" | "dedupe_key"
+      >;
+      an_unit_costs: AnTable<AnUnitCosts, "unit_id" | "workspace_id">;
+      an_monthly_costs: AnTable<AnMonthlyCosts, "unit_id" | "workspace_id" | "month">;
+      an_expenses: AnTable<AnExpense, "workspace_id" | "category" | "amount" | "spent_on">;
     };
     Views: Record<string, never>;
     Functions: {
@@ -206,6 +434,22 @@ export type Database = {
       checkout_booking: { Args: { p_booking_id: string }; Returns: void };
       start_housekeeping_task: { Args: { p_task_id: string }; Returns: void };
       complete_housekeeping_task: { Args: { p_task_id: string }; Returns: void };
+      an_create_workspace: { Args: { p_name: string; p_kind: WorkspaceKind }; Returns: string };
+      an_accept_invites: { Args: Record<string, never>; Returns: number };
+      an_record_license: {
+        Args: {
+          p_workspace: string;
+          p_kind: "activated" | "renewed" | "trial_extended";
+          p_years: number;
+          p_days: number;
+          p_amount: number | null;
+          p_note: string | null;
+        };
+        Returns: string;
+      };
+      an_admin_workspaces: { Args: Record<string, never>; Returns: AdminWorkspaceRow[] };
+      an_workspace_member_list: { Args: { p_workspace: string }; Returns: WorkspaceMemberListRow[] };
+      an_is_platform_admin: { Args: Record<string, never>; Returns: boolean };
     };
   };
 };

@@ -1,0 +1,30 @@
+import type { Report } from "@/lib/analytics/report";
+import type { Upcoming } from "@/lib/analytics/upcoming";
+import type { FixedCostInput, MonthlyCostInput } from "@/lib/analytics/metrics";
+
+export interface DashCosts {
+  fixed: FixedCostInput[];
+  monthly: MonthlyCostInput[];
+  /** One-off expenses with receipts, per unit and month (YYYY-MM). */
+  receipts: { unit_id: string | null; month: string; amount: number }[];
+}
+
+export interface DashProps {
+  report: Report;
+  upcoming: Upcoming;
+  brand: string;
+  periodKey: string;
+  periodOptions: { key: string; label: string }[];
+  generated: string;
+  /** When the server loaded this data (ISO), shown next to Refresh. */
+  loadedAt: string;
+  currency: string;
+  canEdit: boolean;
+  costs: DashCosts;
+  hasUploads: boolean;
+}
+
+export interface TabProps extends DashProps {
+  m: (n: number) => string;
+  openUnit: (id: string) => void;
+}
